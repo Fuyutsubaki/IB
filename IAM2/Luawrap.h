@@ -99,7 +99,7 @@ namespace luawrap
 		using type = lua_Number;
 		static bool checkType(Lua&lua, int index)
 		{
-			return (bool)lua_isnumber(lua.data(), index);
+			return !!lua_isnumber(lua.data(), index);
 		}
 		static void push(Lua&lua, type d)
 		{

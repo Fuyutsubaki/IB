@@ -35,6 +35,7 @@ namespace stgpart
 				if (lua_pcall(state->data(), 1, 2, 0))
 				{
 					auto err = lua_tostring(state->data(), -1);
+					std::cerr << err;
 				}
 				x = lua_tointeger(state->data(), -2);
 				y = lua_tointeger(state->data(), -1);
@@ -45,7 +46,7 @@ namespace stgpart
 		{
 			updata_script(tasks);
 
-			Circle(x, y, 3).draw();
+			tasks.drawer->DrawCricre(x, y, 3);
 		}
 		bool isAlive()const override
 		{
@@ -57,4 +58,5 @@ namespace stgpart
 			alive = false; 
 		}
 	};
+
 }

@@ -169,6 +169,7 @@
     <Font Include="Example\YomogiFont.ttf" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="HitChecker.h" />
     <ClInclude Include="HitObject.h" />
     <ClInclude Include="Input.h" />
     <ClInclude Include="LuaBullet.h" />

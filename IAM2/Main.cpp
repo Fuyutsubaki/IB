@@ -31,8 +31,6 @@ public:
 };
 
 
-
-
 void Main()
 {
 	/*auto test = stgpart::BulletManeger{};

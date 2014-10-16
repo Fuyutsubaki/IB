@@ -11,6 +11,7 @@ namespace stgpart
 	class PlayerAtackManeger;
 	class BombManeger;
 	class EnemyManeger;
+	class Drawer;
 
 	struct TaskMediator
 	{
@@ -20,6 +21,7 @@ namespace stgpart
 		std::shared_ptr<PlayerAtackManeger>playerAtkmane,
 		std::shared_ptr<BombManeger>bombmaneger,
 		std::shared_ptr<EnemyManeger>enemymane,
+		std::shared_ptr<Drawer>drawer,
 		std::shared_ptr<luawrap::Lua> lua,
 		std::shared_ptr<InputKey> input)
 		:playerMane(playerMane),
@@ -27,6 +29,7 @@ namespace stgpart
 		playerAtkmane(playerAtkmane),
 		bombmaneger(bombmaneger),
 		enemymane(enemymane),
+		drawer(drawer), 
 		lua(lua),
 		input(input)
 		{}
@@ -36,8 +39,10 @@ namespace stgpart
 		std::shared_ptr<PlayerAtackManeger>playerAtkmane = nullptr;
 		std::shared_ptr<BombManeger>bombmaneger = nullptr;
 		std::shared_ptr<EnemyManeger>enemymane = nullptr;
+		std::shared_ptr<Drawer>drawer;
 		std::shared_ptr<luawrap::Lua> lua = nullptr;
 		std::shared_ptr<InputKey> input = nullptr;
+
 	};
 	namespace impl
 	{
@@ -264,11 +269,13 @@ namespace stgpart
 		}
 	};
 
-	struct StgField
+	class Drawer
 	{
-		bool in(int x, int y)const
+	public:
+		void DrawCricre(double x, double y, int r)
 		{
-			return true;
+			Circle(x, y, r).draw(Palette::Black);
 		}
+
 	};
 }
