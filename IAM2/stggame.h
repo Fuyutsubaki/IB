@@ -1,7 +1,7 @@
 #pragma once
 #include"StgPart.h"
 #include"LuaBullet.h"
-#include"Drower.hpp"
+
 
 class testBomb
 	:public stgpart::Bomb
@@ -56,10 +56,6 @@ public:
 class Player
 	:public stgpart::PlayerShip
 {
-	double x = 30;
-	double y = 30;
-	bool alive = true;
-
 	//FX–Ê“|‚É‚È‚Á‚½‚Ì‚¾‚æ
 	int bomb_count = 180;
 	enum class State
@@ -68,7 +64,8 @@ class Player
 		,panic
 	};
 	State state = State::normal;
-public:
+
+	
 	void move(stgpart::TaskMediator &task)
 	{
 		auto const&input = task.input;
@@ -98,6 +95,10 @@ public:
 	{
 		task.drawer->DrawCricre(x, y, 6);
 	}
+public:
+	Player()
+		:stgpart::PlayerShip(30, 30)
+	{}
 	void updata(stgpart::TaskMediator &task)
 	{
 		move(task);
@@ -120,17 +121,13 @@ public:
 			break;
 		}
 	}
-	Circle getSharp()override
+	Circle getSharp()const override
 	{
 		return Circle(x, y, 6);
 	}
 	void onHitFlag()override
 	{
 		alive = false;
-	}
-	bool isAlive()const override
-	{
-		return alive;
 	}
 };
 
@@ -152,7 +149,7 @@ class StgGame
 	{
 		auto&med = get().mediator;
 		auto idx = med.lua->makeRegisterIndex();
-		auto p = std::make_shared<stgpart::LuaBullet>(0.0, 0., idx);
+		auto p = std::make_shared<stgpart::LuaBullet>(0.0, 0., -1 ,idx);
 		get().mediator.bulletMane->add(p);
 		med.lua->push(idx);
 		p->pushSelf(*med.lua);

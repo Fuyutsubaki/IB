@@ -13,6 +13,10 @@ namespace stgpart
 	class EnemyManeger;
 	class Drawer;
 
+	
+
+	
+
 	struct TaskMediator
 	{
 		TaskMediator(
@@ -119,12 +123,42 @@ namespace stgpart
 		virtual ~MediatorTask(){}
 	};
 
-	class PlayerShip
+
+	class FieldObject
 		:public MediatorTask
 	{
+	protected:
+		
+		inline static Rect const& fieldRect()
+		{
+			static const Rect rect = Rect{ 0 - 30, 0 - 30, 480 + 30, 728 + 30 };
+			return rect;
+		}
+		double x;
+		double y;
+		bool alive;
 	public:
-		virtual Circle getSharp() = 0;
+		FieldObject(double x, double y)
+			:x(x), y(y), alive(true)
+		{}
+		virtual Circle getSharp()const = 0;
+		bool isAlive()const override
+		{
+			return alive;
+		}
+		virtual ~FieldObject(){}
+
+	};
+
+	class PlayerShip
+		:public FieldObject
+	{
+	public:
+		PlayerShip(double x, double y)
+			:FieldObject(x, y)
+		{}
 		virtual void onHitFlag()=0;
+		virtual~PlayerShip(){}
 	};
 
 	class PlayerShipManeger
@@ -132,9 +166,12 @@ namespace stgpart
 	{	};
 
 	class Enemy
-		:public MediatorTask
+		:public FieldObject
 	{
 	public:
+		Enemy(double x, double y)
+			:FieldObject(x, y)
+		{}
 		virtual ~Enemy(){}
 		virtual Circle getSharp() = 0;
 		virtual void onHitFlag() = 0;
@@ -145,11 +182,15 @@ namespace stgpart
 	{	};
 
 	class Bullet
-		:public MediatorTask
+		:public FieldObject
 	{
+		int hp;
 	public:
+		using FieldObject::FieldObject;
+		Bullet(double x, double y, int hp)
+			:FieldObject(x, y), hp(hp)
+		{}
 		virtual ~Bullet(){}
-		virtual Circle getSharp() = 0;
 		virtual void onHitFlag() = 0;
 	};
 

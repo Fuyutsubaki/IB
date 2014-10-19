@@ -6,14 +6,40 @@ function regBt(x,y,ang)
 	return bt
 end
 
+function sleep(n)
+	for i=0,n do
+		coroutine.yield();
+	end
+end
+function Time(n,p,func)
+	for i=0,n do
+		func()
+		sleep(p)
+	end
+
+end
+
 Co={}
+--current Bullet
+cb=nil;
 function Co:updata()
+	cb =self
 	coroutine.resume(self.co,self)
 	return self.x , self.y
 end
 
+function regCo(x,y,ang,f)
+	local bt=regBt(x,y,ang)
+	bt.co=coroutine.create(f)
+	bt.updata=Co.updata
+end
 PI=math.Pi
-
+function movest(x,y)
+	return function ()
+		cb.x=cb.x+x
+		cb.y=cb.y+y
+	end
+end
 function Co:sin()
 	while true do
 		self.count=self.count+1
@@ -45,15 +71,12 @@ function rsinBt(x,y,ang,speed,per)
 	bt.updata=Co.updata
 end
 
+
+function Co:test()
+	Time(30,0,movest(3,3))
+	Time(30,0,movest(0,3))
+	Time(30,0,movest(3,0))
+end
 function Main()
-	sinBt(120,120,0,2,40)
-	rsinBt(120,120,0,2,40)
+	regCo(0,0,0,Co.test)
 end
-stBt={}
-function stBt:updata()
-	self.x=self.vx+self.x
-	self.y=self.vy+self.y
-	
-end
-
-

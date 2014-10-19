@@ -9,13 +9,9 @@ namespace stgpart
 		:public Bullet
 	{
 		int register_index;
-		double x;
-		double y;
-		bool alive;
-		
 	public:
-		LuaBullet(double x, double y, int register_index)
-			:x(x), y(y), alive(true), register_index(register_index)
+		LuaBullet(double x, double y, int hp, int register_index)
+			:Bullet(x, y, hp), register_index(register_index)
 		{	}
 		void pushSelf(luawrap::Lua&state)
 		{
@@ -47,12 +43,12 @@ namespace stgpart
 			updata_script(tasks);
 
 			tasks.drawer->DrawCricre(x, y, 3);
+
+			if (!fieldRect().intersects(Point(x, y)))
+				alive = false;
 		}
-		bool isAlive()const override
-		{
-			return alive;
-		}
-		Circle getSharp() { return Circle(x, y, 3); }
+		
+		Circle getSharp()const override { return Circle(x, y, 3); }
 		void onHitFlag() 
 		{
 			alive = false; 
