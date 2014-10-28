@@ -4,13 +4,56 @@
 
 #include"Luawrap.h"
 #include"Input.h"
+#include<boost\variant.hpp>
 namespace stgpart
 {
+	struct Sharp
+	{
+		boost::variant<RectF, Circle> data;
+		struct Intersects_v :boost::static_visitor<bool>
+		{
+			template<class Lhs, class Rhs>
+			bool operator()(Lhs const&lhs, Rhs const&rhs)const
+			{
+				return lhs.intersects(rhs);
+			}
+		};
+		struct EndPoint_v :boost::static_visitor<double>
+		{
+			inline double operator()(RectF const&a)const
+			{
+				return a.x + a.w;
+			}
+			inline double operator()(Circle const&a)const
+			{
+				return a.x + a.r;
+			}
+		};
+	public:
+		inline static Sharp makeRect(double x, double y, double w, double h){ return RectF{ x, y, w, h }; }
+		inline static Sharp makeCircle(double x, double y, double r){ return Circle{ x, y, r }; }
+		template<class T>
+		Sharp(T const& a)
+			:data(a){}
+
+		inline bool intersects(Sharp const&rhs)const
+		{
+			return boost::apply_visitor(Intersects_v{}, data, rhs.data);
+		}
+
+		inline double endPoint()const
+		{
+			EndPoint_v v;
+			return data.apply_visitor(v);
+		}
+	};
+
+
+	class PlayerData;
 	class PlayerShipManeger;
 	class BulletManeger;
 	class PlayerAtackManeger;
 	class BombManeger;
-	class EnemyManeger;
 	class Drawer;
 
 	
@@ -24,33 +67,98 @@ namespace stgpart
 		std::shared_ptr<BulletManeger>bulletMane,
 		std::shared_ptr<PlayerAtackManeger>playerAtkmane,
 		std::shared_ptr<BombManeger>bombmaneger,
-		std::shared_ptr<EnemyManeger>enemymane,
 		std::shared_ptr<Drawer>drawer,
 		std::shared_ptr<luawrap::Lua> lua,
-		std::shared_ptr<InputKey> input)
+		std::shared_ptr<InputKey> input,
+		std::shared_ptr<PlayerData>playerdata)
 		:playerMane(playerMane),
 		bulletMane(bulletMane),
 		playerAtkmane(playerAtkmane),
 		bombmaneger(bombmaneger),
-		enemymane(enemymane),
-		drawer(drawer), 
+		drawer(drawer),
 		lua(lua),
 		input(input)
+		, playerdata(playerdata)
 		{}
 		TaskMediator(){}
 		std::shared_ptr<PlayerShipManeger> playerMane = nullptr;
 		std::shared_ptr<BulletManeger>bulletMane = nullptr;
 		std::shared_ptr<PlayerAtackManeger>playerAtkmane = nullptr;
 		std::shared_ptr<BombManeger>bombmaneger = nullptr;
-		std::shared_ptr<EnemyManeger>enemymane = nullptr;
 		std::shared_ptr<Drawer>drawer;
 		std::shared_ptr<luawrap::Lua> lua = nullptr;
 		std::shared_ptr<InputKey> input = nullptr;
+		std::shared_ptr<PlayerData>playerdata = nullptr;
 
 	};
 	namespace impl
 	{
 		template<class ElementType>
+		struct ListPolicy
+		{
+			using element_type = ElementType;
+			std::list<std::shared_ptr<ElementType>> list;
+			template<class Pred>
+			void sort(Pred f)
+			{
+				list.sort(f);
+			}
+		};
+		template<class ElementType>
+		struct VectorPolicy
+		{
+			using element_type = ElementType;
+			std::vector<std::shared_ptr<ElementType>> list;
+			template<class Pred>
+			void sort(Pred f)
+			{
+				std::sort(list.begin(), list.end(), f);
+			}
+		};
+
+		template<class Policy>
+		class BasicFieldObjectManeger
+			:protected Policy, public MediatorTask
+		{
+			using element_type = typename Policy::element_type;
+			
+		public:
+			decltype(list)&getList(){ return list; }
+			void updata(TaskMediator&mediator)override
+			{
+				for (auto& x : list)
+					x->updata(mediator);
+				list.erase(
+					std::remove_if(list.begin(), list.end(), [](std::shared_ptr<element_type>const&x){return !x->isAlive(); })
+					, list.end());
+
+				sort([](std::shared_ptr<element_type>&lhs, std::shared_ptr<element_type>&rhs)
+				{return lhs->getSharp().endPoint() < rhs->getSharp().endPoint();	});
+				
+			}
+			bool isAlive()const override
+			{
+				return true;
+			}
+			void add(std::shared_ptr<element_type>const&p)
+			{
+				list.push_back(p);
+			}
+			template<class Other,class F>
+			void intersects(Other&other, F f)
+			{
+				for (auto&x : list)
+				{
+					for (auto &y : other.getList())
+					{
+						if (x->getSharp().intersects(y->getSharp()))
+							f(*x, *y);
+
+					}
+				}
+			}
+		};
+		/*template<class ElementType>
 		class BasicListManeger
 			:public MediatorTask
 		{
@@ -66,6 +174,11 @@ namespace stgpart
 				list.erase(
 					std::remove_if(list.begin(), list.end(), [](std::shared_ptr<ElementType>const&x){return !x->isAlive(); })
 					, list.end());
+				
+				list.sort(
+					[](std::shared_ptr<ElementType>&lhs, std::shared_ptr<ElementType>&rhs)
+				{return lhs->getSharp().endPoint() < rhs->getSharp().endPoint();	}
+				);
 			}
 			bool isAlive()const override
 			{
@@ -89,7 +202,7 @@ namespace stgpart
 			template<class T>
 			using Containor = std::vector<T>;
 
-			std::list<std::shared_ptr<ElementType>> list;
+			Containor<std::shared_ptr<ElementType>> list;
 		public:
 			void updata(TaskMediator&mediator)override
 			{
@@ -98,6 +211,10 @@ namespace stgpart
 				list.erase(
 					std::remove_if(list.begin(), list.end(), [](std::shared_ptr<ElementType>const&x){return !x->isAlive(); })
 					, list.end());
+				std::sort(list.begin(), list.end(),
+					[](std::shared_ptr<ElementType>&lhs, std::shared_ptr<ElementType>&rhs)
+				{return lhs->getSharp().endPoint() < rhs->getSharp().endPoint();	}
+				);
 			}
 			bool isAlive()const override
 			{
@@ -107,12 +224,12 @@ namespace stgpart
 			{
 				list.push_back(p);
 			}
-			std::list<std::shared_ptr<ElementType>>& getList()
+			Containor<std::shared_ptr<ElementType>>& getList()
 			{
 				return list;
 			}
 
-		};
+		};*/
 	}
 
 	class MediatorTask
@@ -122,7 +239,6 @@ namespace stgpart
 		virtual bool isAlive()const = 0;
 		virtual ~MediatorTask(){}
 	};
-
 
 	class FieldObject
 		:public MediatorTask
@@ -141,7 +257,8 @@ namespace stgpart
 		FieldObject(double x, double y)
 			:x(x), y(y), alive(true)
 		{}
-		virtual Circle getSharp()const = 0;
+		FieldObject(FieldObject const&) = delete;
+		virtual Sharp getSharp()const = 0;
 		bool isAlive()const override
 		{
 			return alive;
@@ -162,23 +279,7 @@ namespace stgpart
 	};
 
 	class PlayerShipManeger
-		:public impl::BasicListManeger<PlayerShip>
-	{	};
-
-	class Enemy
-		:public FieldObject
-	{
-	public:
-		Enemy(double x, double y)
-			:FieldObject(x, y)
-		{}
-		virtual ~Enemy(){}
-		virtual Circle getSharp() = 0;
-		virtual void onHitFlag() = 0;
-	};
-
-	class EnemyManeger
-		:public impl::BasicListManeger<Enemy>
+		:public  impl::BasicFieldObjectManeger<impl::ListPolicy<PlayerShip>>
 	{	};
 
 	class Bullet
@@ -195,7 +296,7 @@ namespace stgpart
 	};
 
 	class BulletManeger
-		:public impl::BasicListManeger<Bullet>
+		:public  impl::BasicFieldObjectManeger<impl::ListPolicy<Bullet>>
 	{	};
 
 	class CheckHit
@@ -204,31 +305,27 @@ namespace stgpart
 	public:
 		CheckHit()
 		{}
-		void updata(TaskMediator&task)override
+		void updata(TaskMediator&tasks)override
 		{
-			//Å“K‰»‚µ‚æ‚¤‚º
-			for (auto x : task.bulletMane->getList())
+			tasks.playerMane->intersects(*tasks.bulletMane,
+				[](PlayerShip&p, Bullet&bt)
 			{
-				for (auto y : task.playerMane->getList())
-				{
-					if (x->getSharp().intersects(y->getSharp()))
-					{
-						y->onHitFlag();
-					}
-				}
-			}
+				p.onHitFlag();
+			});
 		}
 		bool isAlive()const override{ return true; }
 	};
 
 	class PlayerAttack
-		:public MediatorTask
+		:public FieldObject
 	{
 	public:
-		virtual Circle getSharp() = 0;
+		PlayerAttack(double x, double y)
+			:FieldObject(x, y)
+		{}
 	};
 	class PlayerAtackManeger
-		:public impl::BasicVectorManeger<PlayerAttack>
+		:public impl::BasicFieldObjectManeger<impl::VectorPolicy<PlayerAttack>>
 	{	};
 
 	class CheckHitAtkBt
@@ -237,7 +334,12 @@ namespace stgpart
 	public:
 		void updata(TaskMediator&tasks)override
 		{
-			for (auto&atk : tasks.playerAtkmane->getList())
+			tasks.playerAtkmane->intersects(*tasks.bulletMane,
+				[](PlayerAttack&, Bullet&bt)
+			{
+				bt.onHitFlag();
+			});
+			/*for (auto&atk : tasks.playerAtkmane->getList())
 			{
 				for (auto&bt : tasks.bulletMane->getList())
 				{
@@ -246,7 +348,7 @@ namespace stgpart
 						bt->onHitFlag();
 					}
 				}
-			}
+			}*/
 		}
 		bool isAlive()const
 		{
@@ -255,37 +357,16 @@ namespace stgpart
 	};
 
 	class Bomb
-		:public MediatorTask
+		:public FieldObject
 	{
 	public:
-		virtual Circle getSharp() = 0;
+		Bomb(double x, double y)
+			:FieldObject(x, y)
+		{}
 	};
 	class BombManeger
-		:public impl::BasicVectorManeger<Bomb>
+		:public impl::BasicFieldObjectManeger<impl::VectorPolicy<Bomb>>
 	{	};
-
-	class HitBEBt
-		:MediatorTask
-	{
-	public:
-		void updata(TaskMediator&tasks)override
-		{
-			for (auto&bomb : tasks.bombmaneger->getList())
-			{
-				for (auto&bt : tasks.bulletMane->getList())
-				{
-					if (bomb->getSharp().intersects(bt->getSharp()))
-					{
-						bt->onHitFlag();
-					}
-				}
-			}
-		}
-		bool isAlive()const override
-		{
-			return true;
-		}
-	};
 
 	class checkHitBomb
 		:public MediatorTask
@@ -293,16 +374,11 @@ namespace stgpart
 	public:
 		void updata(TaskMediator&tasks)override
 		{
-			for (auto&atk : tasks.bombmaneger->getList())
+			tasks.bombmaneger->intersects(*tasks.bulletMane,
+				[](Bomb&, Bullet&bt)
 			{
-				for (auto&bt : tasks.bulletMane->getList())
-				{
-					if (atk->getSharp().intersects(bt->getSharp()))
-					{
-						bt->onHitFlag();
-					}
-				}
-			}
+				bt.onHitFlag();
+			});
 		}
 		bool isAlive()const
 		{
@@ -315,8 +391,23 @@ namespace stgpart
 	public:
 		void DrawCricre(double x, double y, int r)
 		{
-			Circle(x, y, r).draw(Palette::Black);
+			//Circle(x, y, r).draw(Palette::Black);
+			Circle(x, y, 3).draw(Palette::Black);
+			Circle(x, y, 7).drawFrame(1, 0, Palette::Black);
 		}
 
+	};
+
+
+
+
+	class PlayerData
+	{
+	public:
+		
+	private:
+		int life;
+		int score;
+		
 	};
 }

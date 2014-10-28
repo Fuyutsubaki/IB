@@ -6,25 +6,21 @@
 class testBomb
 	:public stgpart::Bomb
 {
-	double x, y;
 	int count;
 public:
 	testBomb(double x, double y, int count)
-		:x(x), y(y), count(count)
+		:stgpart::Bomb(x, y), count(count)
 	{}
 
 	void updata(stgpart::TaskMediator&task)override
 	{
 		task.drawer->DrawCricre(x, y, 15);
 		--count;
+		if (count<0)alive = false;
 	}
-	bool isAlive()const
+	stgpart::Sharp getSharp()const override
 	{
-		return count > 0;
-	}
-	Circle getSharp()
-	{
-		return{ x, y, 15 };
+		return Circle{ x, y, 15 };
 	}
 
 };
@@ -32,13 +28,11 @@ public:
 class testPAtk
 	:public stgpart::PlayerAttack
 {
-	double x;
-	double y;
 public:
 	testPAtk(double x, double y)
-		:x(x), y(y)
+		:stgpart::PlayerAttack(x, y)
 	{}
-	Circle getSharp()override
+	stgpart::Sharp getSharp()const override
 	{
 		return Circle(x, y, 4);
 	}
@@ -46,10 +40,6 @@ public:
 	{
 		x += 4;
 		task.drawer->DrawCricre(x, y, 3);
-	}
-	bool isAlive()const override
-	{
-		return true;
 	}
 };
 
@@ -121,7 +111,7 @@ public:
 			break;
 		}
 	}
-	Circle getSharp()const override
+	stgpart::Sharp getSharp()const override
 	{
 		return Circle(x, y, 6);
 	}
@@ -145,16 +135,22 @@ class StgGame
 	std::list<std::shared_ptr<stgpart::MediatorTask>> tasklist;
 	stgpart::TaskMediator mediator;
 	std::shared_ptr<stgpart::Drawer> drawer;
-	static int regBt(lua_State*)
+	
+	void connectBt()
 	{
-		auto&med = get().mediator;
-		auto idx = med.lua->makeRegisterIndex();
-		auto p = std::make_shared<stgpart::LuaBullet>(0.0, 0., -1 ,idx);
-		get().mediator.bulletMane->add(p);
-		med.lua->push(idx);
-		p->pushSelf(*med.lua);
-		return 1;
+		auto lua = mediator.lua->data();
+		lua_getglobal(lua, "shotStack");
+		lua_pushnil(lua);
+		while (lua_next(lua, -2))
+		{
+			int idx = luaL_ref(lua, LUA_REGISTRYINDEX);
+			auto p = std::make_shared<stgpart::LuaBullet>(0.0, 0., -1, idx);
+			get().mediator.bulletMane->add(p);
+		}
+		lua_pop(lua, 1);
 	}
+
+
 	StgGame(){}
 public:
 	StgGame(StgGame const&) = delete;
@@ -169,28 +165,28 @@ public:
 		auto chAB = std::make_shared<stgpart::CheckHitAtkBt>();
 		auto chBomb = std::make_shared<stgpart::checkHitBomb>();
 		auto patk = std::make_shared<stgpart::PlayerAtackManeger>();
-		auto enemymane = std::make_shared<stgpart::EnemyManeger>();
 		auto bombMane = std::make_shared<stgpart::BombManeger>();
 		auto drawer = std::make_shared<stgpart::Drawer>();
 		auto lua = std::make_shared<luawrap::Lua>();
+		auto playerdata = std::make_shared<stgpart::PlayerData>();
 		lua->load_file("test.lua");
-		
-		lua->registerCfunc("_regBt", regBt);
-		mediator = stgpart::TaskMediator(player, btmane, patk, bombMane, enemymane, drawer, lua, input);
+		mediator = stgpart::TaskMediator(player, btmane, patk, bombMane, drawer, lua, input, playerdata);
 		tasklist.assign(std::initializer_list<std::shared_ptr<stgpart::MediatorTask>>
-		{ btmane, ch, chAB, patk, player, bombMane, chBomb, enemymane});
+		{ btmane, ch, chAB, patk, player, bombMane, chBomb});
 
 		//player->add(std::make_shared<testPlayer>());
 	}
 	void updata()override
 	{
+		mediator.lua->call("frameInit");
 		Rect(0, 0, 640, 480).draw();
 		for (auto&task:tasklist)
 		{
 			task->updata(mediator);
-		}
-		if (Input::KeySpace.pressed)mediator.lua->call("Main");
+		}	
+		if (Input::KeySpace.clicked)mediator.lua->call("Main");
 		if (Input::KeyP.clicked)mediator.playerMane->add(std::make_shared<Player>());
+		connectBt();
 	}
 	bool isAlive()const override
 	{

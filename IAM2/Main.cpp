@@ -1,8 +1,11 @@
 
 # include <Siv3D.hpp>
+#include<Windows.h>
 
 #include"StgPart.h"
 #include"stggame.h"
+#include<boost\variant.hpp>
+
 
 
 
@@ -34,13 +37,20 @@ void Main()
 	patk->updata(*tasks);
 	}*/
 
-	
-	auto &stggame=StgGame::get();
-	stggame.init();
+	::AllocConsole();
+	FILE *console;
+	::freopen_s(&console, "CONOUT$", "w", stdout);
 
+	auto &stggame=StgGame::get();
+	
+	stggame.init();
+	bool stop = false;
 	while (System::Update())
 	{
-		if (Input::KeyR.clicked)stggame.init();
+		if (Input::KeyR.clicked)stggame.init(), std::cout << "\n\n=========================\n\n";
+		if (Input::Key0.clicked)stop = !stop;
+		if (stop)continue;
 		stggame.updata();
 	}
+	s3d::TransformedMesh s;
 }

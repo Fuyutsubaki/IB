@@ -46,7 +46,7 @@ namespace luawrap
 		void load_file(const std::string&str)
 		{
 			if (luaL_loadfile(data(), str.data()) || lua_pcall(data(), 0, 0, 0))
-				throw std::runtime_error("not fond file");
+				std::cout << str << ":syntax error";
 		}
 
 		template<class...T>

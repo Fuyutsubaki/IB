@@ -1,9 +1,17 @@
+shotStack={}
+
 function regBt(x,y,ang)
-	local bt=_regBt(x,y)
+	local bt={}
 	bt.x=x
 	bt.y=y
 	bt.ang=ang
+	table.insert(shotStack,bt)
 	return bt
+end
+
+function frameInit()
+	shotStack={}
+
 end
 
 function sleep(n)
@@ -12,11 +20,22 @@ function sleep(n)
 	end
 end
 function Time(n,p,func)
-	for i=0,n do
+	for i=0,n-1 do
 		func()
 		sleep(p)
 	end
+end
 
+
+function nway(n,ang,f)
+	return function()
+		p=cb.ang
+		for i=0,n-1 do
+			cb.ang=p+ang/(n-1)*(i-n/2.)
+			f()
+		end
+		cb.ang=p
+	end
 end
 
 Co={}
@@ -24,16 +43,23 @@ Co={}
 cb=nil;
 function Co:updata()
 	cb =self
+	for key,val in ipairs(self.subco)do
+		coroutine.resume(val,self)
+	end
 	coroutine.resume(self.co,self)
 	return self.x , self.y
 end
 
 function regCo(x,y,ang,f)
 	local bt=regBt(x,y,ang)
+	bt.subco={}
 	bt.co=coroutine.create(f)
 	bt.updata=Co.updata
+	return bt
 end
-PI=math.Pi
+
+pi=math.pi
+
 function movest(x,y)
 	return function ()
 		cb.x=cb.x+x
@@ -50,33 +76,28 @@ function Co:sin()
 	end
 end
 
-function sinBt(x,y,ang,speed,per)
-	local bt=regBt(x,y,ang)
-	bt.count=0
-	bt.tr=math.pi/2
-	bt.per=per
-	bt.speed=speed
-	bt.ang0=ang
-	bt.co=coroutine.create(Co.sin)
-	bt.updata=Co.updata
-end
-function rsinBt(x,y,ang,speed,per)
-	local bt=regBt(x,y,ang)
-	bt.count=0
-	bt.tr=-math.pi/2
-	bt.per=per
-	bt.speed=speed
-	bt.ang0=ang
-	bt.co=coroutine.create(Co.sin)
-	bt.updata=Co.updata
+function sinCc(speed,per)
+	return function()
+		local bt=regCo(cb.x,cb.y,cb.ang,Co.sin)
+		bt.count=0
+		bt.tr=math.pi/2
+		bt.per=per
+		bt.speed=speed
+		bt.ang0=cb.ang
+		
+		local bt2=regCo(cb.x,cb.y,cb.ang,Co.sin)
+		bt2.count=0
+		bt2.tr=-math.pi/2
+		bt2.per=per
+		bt2.speed=speed
+		bt2.ang0=cb.ang
+	end
 end
 
 
-function Co:test()
-	Time(30,0,movest(3,3))
-	Time(30,0,movest(0,3))
-	Time(30,0,movest(3,0))
+function ms1()
+	Time(10,8,nway(8,pi*2,sinCc(3,70)))
 end
 function Main()
-	regCo(0,0,0,Co.test)
+	regCo(120,120,pi/4,ms1)
 end

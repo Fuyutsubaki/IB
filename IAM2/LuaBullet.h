@@ -30,8 +30,7 @@ namespace stgpart
 				pushSelf(*state);
 				if (lua_pcall(state->data(), 1, 2, 0))
 				{
-					auto err = lua_tostring(state->data(), -1);
-					std::cerr << err;
+					std::cout << "LuaBullet:\t" << lua_tostring(state->data(), -1) << std::endl;
 				}
 				x = lua_tointeger(state->data(), -2);
 				y = lua_tointeger(state->data(), -1);
@@ -45,10 +44,14 @@ namespace stgpart
 			tasks.drawer->DrawCricre(x, y, 3);
 
 			if (!fieldRect().intersects(Point(x, y)))
+			{
 				alive = false;
+				
+			}
+				
 		}
 		
-		Circle getSharp()const override { return Circle(x, y, 3); }
+		Sharp getSharp()const override { return Circle(x, y, 3); }
 		void onHitFlag() 
 		{
 			alive = false; 
