@@ -55,7 +55,7 @@ namespace stgpart
 	class PlayerAtackManeger;
 	class BombManeger;
 	class Drawer;
-
+	struct FieldObjectDesignFactory;
 	
 
 	
@@ -63,22 +63,25 @@ namespace stgpart
 	struct TaskMediator
 	{
 		TaskMediator(
-		std::shared_ptr<PlayerShipManeger> playerMane,
-		std::shared_ptr<BulletManeger>bulletMane,
-		std::shared_ptr<PlayerAtackManeger>playerAtkmane,
-		std::shared_ptr<BombManeger>bombmaneger,
-		std::shared_ptr<Drawer>drawer,
-		std::shared_ptr<luawrap::Lua> lua,
-		std::shared_ptr<InputKey> input,
-		std::shared_ptr<PlayerData>playerdata)
+		std::shared_ptr<PlayerShipManeger>const& playerMane,
+		std::shared_ptr<BulletManeger>const&bulletMane,
+		std::shared_ptr<PlayerAtackManeger>const&playerAtkmane,
+		std::shared_ptr<BombManeger>const&bombmaneger,
+		std::shared_ptr<Drawer>const&drawer,
+		std::shared_ptr<luawrap::Lua>const& lua,
+		std::shared_ptr<InputKey>const& input,
+		std::shared_ptr<PlayerData>const&playerdata,
+		std::shared_ptr<FieldObjectDesignFactory>const&design
+		)
 		:playerMane(playerMane),
 		bulletMane(bulletMane),
 		playerAtkmane(playerAtkmane),
 		bombmaneger(bombmaneger),
 		drawer(drawer),
 		lua(lua),
-		input(input)
-		, playerdata(playerdata)
+		input(input),
+		playerdata(playerdata),
+		design(design)
 		{}
 		TaskMediator(){}
 		std::shared_ptr<PlayerShipManeger> playerMane = nullptr;
@@ -89,7 +92,7 @@ namespace stgpart
 		std::shared_ptr<luawrap::Lua> lua = nullptr;
 		std::shared_ptr<InputKey> input = nullptr;
 		std::shared_ptr<PlayerData>playerdata = nullptr;
-
+		std::shared_ptr<FieldObjectDesignFactory>design;
 	};
 	namespace impl
 	{
@@ -239,12 +242,19 @@ namespace stgpart
 		virtual bool isAlive()const = 0;
 		virtual ~MediatorTask(){}
 	};
-
+	
+	
+	class FieldObjectDesign
+	{
+	public:
+		virtual Sharp getSharp(double x, double y, double angle) = 0;
+		virtual void draw(double x, double y, double angle) = 0;
+		virtual~FieldObjectDesign(){}
+	};
 	class FieldObject
 		:public MediatorTask
 	{
 	protected:
-		
 		inline static Rect const& fieldRect()
 		{
 			static const Rect rect = Rect{ 0 - 30, 0 - 30, 480 + 30, 728 + 30 };
@@ -252,11 +262,13 @@ namespace stgpart
 		}
 		double x;
 		double y;
+		double angle;
 		bool alive;
 	public:
 		FieldObject(double x, double y)
 			:x(x), y(y), alive(true)
 		{}
+		
 		FieldObject(FieldObject const&) = delete;
 		virtual Sharp getSharp()const = 0;
 		bool isAlive()const override
@@ -266,6 +278,9 @@ namespace stgpart
 		virtual ~FieldObject(){}
 
 	};
+
+	
+
 
 	class PlayerShip
 		:public FieldObject
@@ -285,11 +300,13 @@ namespace stgpart
 	class Bullet
 		:public FieldObject
 	{
+	protected:
 		int hp;
+		std::shared_ptr<FieldObjectDesign> design;
 	public:
 		using FieldObject::FieldObject;
-		Bullet(double x, double y, int hp)
-			:FieldObject(x, y), hp(hp)
+		Bullet(double x, double y, int hp, std::shared_ptr<FieldObjectDesign>const&p)
+			:FieldObject(x, y), hp(hp), design(p)
 		{}
 		virtual ~Bullet(){}
 		virtual void onHitFlag() = 0;
@@ -308,7 +325,7 @@ namespace stgpart
 		void updata(TaskMediator&tasks)override
 		{
 			tasks.playerMane->intersects(*tasks.bulletMane,
-				[](PlayerShip&p, Bullet&bt)
+				[](PlayerShip&p, Bullet&)
 			{
 				p.onHitFlag();
 			});
@@ -389,12 +406,7 @@ namespace stgpart
 	class Drawer
 	{
 	public:
-		void DrawCricre(double x, double y, int r)
-		{
-			//Circle(x, y, r).draw(Palette::Black);
-			Circle(x, y, 3).draw(Palette::Black);
-			Circle(x, y, 7).drawFrame(1, 0, Palette::Black);
-		}
+		void DrawCricre(double x, double y, int r);
 
 	};
 

@@ -269,5 +269,8 @@
     <ClInclude Include="HitChecker.h">
       <Filter>ソース ファイル</Filter>
     </ClInclude>
+    <ClInclude Include="FieldObjectDesign.h">
+      <Filter>ソース ファイル</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

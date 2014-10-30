@@ -1,10 +1,11 @@
 shotStack={}
 
-function regBt(x,y,ang)
+function regBt(x,y,ang,design)
 	local bt={}
 	bt.x=x
 	bt.y=y
 	bt.ang=ang
+	bt.design=design
 	table.insert(shotStack,bt)
 	return bt
 end
@@ -25,7 +26,7 @@ function Time(n,p,func)
 		sleep(p)
 	end
 end
-
+Design={None=0,TriCir=1,Egg=2}
 
 function nway(n,ang,f)
 	return function()
@@ -47,11 +48,11 @@ function Co:updata()
 		coroutine.resume(val,self)
 	end
 	coroutine.resume(self.co,self)
-	return self.x , self.y
+	return self.x , self.y ,self.ang,self.design
 end
 
-function regCo(x,y,ang,f)
-	local bt=regBt(x,y,ang)
+function regCo(x,y,ang,design,f)
+	local bt=regBt(x,y,ang,design)
 	bt.subco={}
 	bt.co=coroutine.create(f)
 	bt.updata=Co.updata
@@ -76,16 +77,16 @@ function Co:sin()
 	end
 end
 
-function sinCc(speed,per)
+function sinCc(speed,per,design)
 	return function()
-		local bt=regCo(cb.x,cb.y,cb.ang,Co.sin)
+		local bt=regCo(cb.x,cb.y,cb.ang,design,Co.sin)
 		bt.count=0
 		bt.tr=math.pi/2
 		bt.per=per
 		bt.speed=speed
 		bt.ang0=cb.ang
 		
-		local bt2=regCo(cb.x,cb.y,cb.ang,Co.sin)
+		local bt2=regCo(cb.x,cb.y,cb.ang,design,Co.sin)
 		bt2.count=0
 		bt2.tr=-math.pi/2
 		bt2.per=per
@@ -96,8 +97,14 @@ end
 
 
 function ms1()
-	Time(10,8,nway(8,pi*2,sinCc(3,70)))
+	Time(10,2,	
+		function()
+			nway(8,pi*2,sinCc(3,70,Design.TriCir))()
+			cb.x=cb.x+5;
+		end
+	)
+	cb.x=cb.x+7;
 end
 function Main()
-	regCo(120,120,pi/4,ms1)
+	regCo(120,120,pi/4,Design.TriCir,ms1)
 end

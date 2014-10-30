@@ -2,6 +2,7 @@
 
 #include"Luawrap.h"
 #include"StgPart.h"
+#include"FieldObjectDesign.h"
 
 namespace stgpart
 {
@@ -9,9 +10,10 @@ namespace stgpart
 		:public Bullet
 	{
 		int register_index;
+		int design_handle = 0;
 	public:
-		LuaBullet(double x, double y, int hp, int register_index)
-			:Bullet(x, y, hp), register_index(register_index)
+		LuaBullet(double x, double y, int hp, int register_index,  std::shared_ptr<FieldObjectDesign>const&p)
+			:Bullet(x, y, hp,p), register_index(register_index)
 		{	}
 		void pushSelf(luawrap::Lua&state)
 		{
@@ -20,6 +22,7 @@ namespace stgpart
 		
 		void updata_script(TaskMediator& tasks)
 		{
+			
 			auto state = tasks.lua;
 			//stack‚Ìó‘Ô‚ð•Û‘¶‚·‚é
 			int stack_state = lua_gettop(state->data());
@@ -28,30 +31,36 @@ namespace stgpart
 				lua_getfield(state->data(), -1, "updata");
 
 				pushSelf(*state);
-				if (lua_pcall(state->data(), 1, 2, 0))
+				if (lua_pcall(state->data(), 1, 4, 0))
 				{
 					std::cout << "LuaBullet:\t" << lua_tostring(state->data(), -1) << std::endl;
 				}
-				x = lua_tointeger(state->data(), -2);
-				y = lua_tointeger(state->data(), -1);
+				x = lua_tointeger(state->data(), -4);
+				y = lua_tointeger(state->data(), -3);
+				angle = lua_tonumber(state->data(), -2);
+				auto des = lua_tointeger(state->data(), -1);
+				if (design_handle != des)
+				{
+					design_handle = des;
+					design = tasks.design->make_design(des);
+				}
+					
 			}
 			lua_settop(state->data(), stack_state);
 		}
 		void updata(TaskMediator& tasks)override
 		{
+			auto p = tasks.design->getNone();
 			updata_script(tasks);
 
-			tasks.drawer->DrawCricre(x, y, 3);
-
+			//tasks.drawer->DrawCricre(x, y, 3);
+			design->draw(x, y, angle);
 			if (!fieldRect().intersects(Point(x, y)))
 			{
 				alive = false;
-				
 			}
-				
 		}
-		
-		Sharp getSharp()const override { return Circle(x, y, 3); }
+		Sharp getSharp()const{ return design->getSharp(x, y, angle); }
 		void onHitFlag() 
 		{
 			alive = false; 

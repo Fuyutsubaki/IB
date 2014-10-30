@@ -2,7 +2,7 @@
 #include"StgPart.h"
 #include"LuaBullet.h"
 
-
+#include"FieldObjectDesign.h"
 class testBomb
 	:public stgpart::Bomb
 {
@@ -20,9 +20,8 @@ public:
 	}
 	stgpart::Sharp getSharp()const override
 	{
-		return Circle{ x, y, 15 };
+		return{ Circle{ x, y, 15 } };
 	}
-
 };
 
 class testPAtk
@@ -32,14 +31,15 @@ public:
 	testPAtk(double x, double y)
 		:stgpart::PlayerAttack(x, y)
 	{}
-	stgpart::Sharp getSharp()const override
-	{
-		return Circle(x, y, 4);
-	}
+	
 	void updata(stgpart::TaskMediator &task)override
 	{
 		x += 4;
 		task.drawer->DrawCricre(x, y, 3);
+	}
+	stgpart::Sharp getSharp()const override
+	{
+		return{ Circle{ x, y, 3 } };
 	}
 };
 
@@ -111,9 +111,9 @@ public:
 			break;
 		}
 	}
-	stgpart::Sharp getSharp()const override
+	stgpart::Sharp getSharp()const
 	{
-		return Circle(x, y, 6);
+		return{ Circle{ x, y, 6 } };
 	}
 	void onHitFlag()override
 	{
@@ -135,7 +135,6 @@ class StgGame
 	std::list<std::shared_ptr<stgpart::MediatorTask>> tasklist;
 	stgpart::TaskMediator mediator;
 	std::shared_ptr<stgpart::Drawer> drawer;
-	
 	void connectBt()
 	{
 		auto lua = mediator.lua->data();
@@ -144,7 +143,7 @@ class StgGame
 		while (lua_next(lua, -2))
 		{
 			int idx = luaL_ref(lua, LUA_REGISTRYINDEX);
-			auto p = std::make_shared<stgpart::LuaBullet>(0.0, 0., -1, idx);
+			auto p = std::make_shared<stgpart::LuaBullet>(0.0, 0., -1, idx, mediator.design->getNone());
 			get().mediator.bulletMane->add(p);
 		}
 		lua_pop(lua, 1);
@@ -169,8 +168,10 @@ public:
 		auto drawer = std::make_shared<stgpart::Drawer>();
 		auto lua = std::make_shared<luawrap::Lua>();
 		auto playerdata = std::make_shared<stgpart::PlayerData>();
+
+		auto design = std::make_shared<stgpart::FieldObjectDesignFactory>();
 		lua->load_file("test.lua");
-		mediator = stgpart::TaskMediator(player, btmane, patk, bombMane, drawer, lua, input, playerdata);
+		mediator = stgpart::TaskMediator(player, btmane, patk, bombMane, drawer, lua, input, playerdata, design);
 		tasklist.assign(std::initializer_list<std::shared_ptr<stgpart::MediatorTask>>
 		{ btmane, ch, chAB, patk, player, bombMane, chBomb});
 
@@ -178,13 +179,15 @@ public:
 	}
 	void updata()override
 	{
+		auto p = mediator.design->getNone();
 		mediator.lua->call("frameInit");
 		Rect(0, 0, 640, 480).draw();
 		for (auto&task:tasklist)
 		{
 			task->updata(mediator);
 		}	
-		if (Input::KeySpace.clicked)mediator.lua->call("Main");
+		if (Input::KeySpace.clicked)
+			mediator.lua->call("Main");
 		if (Input::KeyP.clicked)mediator.playerMane->add(std::make_shared<Player>());
 		connectBt();
 	}
