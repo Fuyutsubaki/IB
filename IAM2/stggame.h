@@ -14,13 +14,13 @@ public:
 
 	void updata(stgpart::TaskMediator&task)override
 	{
-		task.drawer->DrawCricre(x, y, 15);
+		task.drawer->DrawCricre(x, y, 40);
 		--count;
 		if (count<0)alive = false;
 	}
 	stgpart::Sharp getSharp()const override
 	{
-		return{ Circle{ x, y, 15 } };
+		return{ Circle{ x, y, 40 } };
 	}
 };
 
@@ -51,7 +51,7 @@ class Player
 	enum class State
 	{
 		normal
-		,panic
+		,bomb
 	};
 	State state = State::normal;
 
@@ -65,7 +65,7 @@ class Player
 			x += (input->right() - input->left())*3;
 			y += (input->down() - input->up())*3;
 			break;
-		case State::panic:
+		case State::bomb:
 			x += (input->right() - input->left())*5;
 			y += (input->down() - input->up())*5;
 			break;
@@ -85,31 +85,37 @@ class Player
 	{
 		task.drawer->DrawCricre(x, y, 6);
 	}
+
+	void bomb(stgpart::TaskMediator &task)
+	{
+		switch (state)
+		{
+		case State::normal:
+			if (Input::KeyX.clicked)
+				state = State::bomb;
+			break;
+
+		case State::bomb:
+			bool r = Input::KeyX.released || (bomb_count == 0);
+			if (r)
+			{
+				task.bombmaneger->add(std::make_shared<testBomb>(x, y, 20));
+				alive = false;
+			}
+			--bomb_count;
+			break;
+		}
+	}
 public:
-	Player()
-		:stgpart::PlayerShip(30, 30)
+	Player(double x, double y)
+		:stgpart::PlayerShip(x, y)
 	{}
 	void updata(stgpart::TaskMediator &task)
 	{
 		move(task);
 		shot(task);
 		draw(task);
-		switch (state)
-		{
-		case State::normal:
-			if (Input::KeyX.clicked)
-				state = State::panic;
-			break;
-
-		case State::panic:
-			--bomb_count;
-			if (bomb_count == 0)
-			{
-				task.bombmaneger->add(std::make_shared<testBomb>(x, y, 20));
-				alive = false;
-			}
-			break;
-		}
+		bomb(task);
 	}
 	stgpart::Sharp getSharp()const
 	{
@@ -148,7 +154,11 @@ class StgGame
 		}
 		lua_pop(lua, 1);
 	}
-
+	void repop()
+	{
+		auto pos = mediator.motherShip->getPos();
+		mediator.playerMane->add(std::make_shared<Player>(pos.x, pos.y));
+	}
 
 	StgGame(){}
 public:
@@ -170,8 +180,10 @@ public:
 		auto playerdata = std::make_shared<stgpart::PlayerData>();
 
 		auto design = std::make_shared<stgpart::FieldObjectDesignFactory>();
+
+		auto motherShip = std::make_shared<stgpart::MotherShip>();
 		lua->load_file("test.lua");
-		mediator = stgpart::TaskMediator(player, btmane, patk, bombMane, drawer, lua, input, playerdata, design);
+		mediator = stgpart::TaskMediator(player, btmane, patk, bombMane, drawer, lua, input, playerdata, design, motherShip);
 		tasklist.assign(std::initializer_list<std::shared_ptr<stgpart::MediatorTask>>
 		{ btmane, ch, chAB, patk, player, bombMane, chBomb});
 
@@ -181,14 +193,18 @@ public:
 	{
 		auto p = mediator.design->getNone();
 		mediator.lua->call("frameInit");
+		
 		Rect(0, 0, 640, 480).draw();
 		for (auto&task:tasklist)
 		{
 			task->updata(mediator);
-		}	
+		}
+		mediator.effector->updata(mediator);
 		if (Input::KeySpace.clicked)
 			mediator.lua->call("Main");
-		if (Input::KeyP.clicked)mediator.playerMane->add(std::make_shared<Player>());
+		if (Input::KeyP.clicked)repop();
+		if (Input::KeyM.clicked)
+			mediator.motherShip->setPos(mediator.playerMane->getList().begin()->get()->getPos());
 		connectBt();
 	}
 	bool isAlive()const override

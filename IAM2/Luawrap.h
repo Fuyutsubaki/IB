@@ -2,6 +2,8 @@
 
 #include<lua.hpp>
 #include<memory>
+#include<iostream>
+#include<string>
 namespace luawrap
 {
 	struct Lua

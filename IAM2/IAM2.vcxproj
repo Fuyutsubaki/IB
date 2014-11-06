@@ -94,6 +94,7 @@
   <ItemGroup>
     <ClCompile Include="BulletDesign.cpp" />
     <ClCompile Include="Main.cpp" />
+    <ClCompile Include="stgpart.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="engine\assets\circle.png" />

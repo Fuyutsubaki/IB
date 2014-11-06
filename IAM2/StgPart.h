@@ -56,8 +56,8 @@ namespace stgpart
 	class BombManeger;
 	class Drawer;
 	struct FieldObjectDesignFactory;
-	
-
+	class Effector;
+	class MotherShip;
 	
 
 	struct TaskMediator
@@ -71,7 +71,8 @@ namespace stgpart
 		std::shared_ptr<luawrap::Lua>const& lua,
 		std::shared_ptr<InputKey>const& input,
 		std::shared_ptr<PlayerData>const&playerdata,
-		std::shared_ptr<FieldObjectDesignFactory>const&design
+		std::shared_ptr<FieldObjectDesignFactory>const&design,
+		std::shared_ptr<MotherShip>const&motherShip
 		)
 		:playerMane(playerMane),
 		bulletMane(bulletMane),
@@ -81,7 +82,9 @@ namespace stgpart
 		lua(lua),
 		input(input),
 		playerdata(playerdata),
-		design(design)
+		design(design),
+		motherShip(motherShip)
+		, effector(std::make_shared<Effector>())
 		{}
 		TaskMediator(){}
 		std::shared_ptr<PlayerShipManeger> playerMane = nullptr;
@@ -93,6 +96,8 @@ namespace stgpart
 		std::shared_ptr<InputKey> input = nullptr;
 		std::shared_ptr<PlayerData>playerdata = nullptr;
 		std::shared_ptr<FieldObjectDesignFactory>design;
+		std::shared_ptr<MotherShip>motherShip;
+		std::shared_ptr<Effector>effector;
 	};
 	namespace impl
 	{
@@ -265,6 +270,12 @@ namespace stgpart
 		double angle;
 		bool alive;
 	public:
+		Vec2 getPos()const{ return{ x, y }; }
+		void setPos(Vec2 const&xy)
+		{
+			x = xy.x;
+			y = xy.y;
+		}
 		FieldObject(double x, double y)
 			:x(x), y(y), alive(true)
 		{}
@@ -281,7 +292,14 @@ namespace stgpart
 
 	
 
+	class Effector
+		:public impl::BasicFieldObjectManeger<impl::VectorPolicy<FieldObject>>
+	{
 
+	public:
+		
+		void addBreakEffect(Vec2 p);
+	};
 	class PlayerShip
 		:public FieldObject
 	{
@@ -352,20 +370,11 @@ namespace stgpart
 		void updata(TaskMediator&tasks)override
 		{
 			tasks.playerAtkmane->intersects(*tasks.bulletMane,
-				[](PlayerAttack&, Bullet&bt)
+				[&](PlayerAttack&, Bullet&bt)
 			{
+				tasks.effector->addBreakEffect(bt.getPos());
 				bt.onHitFlag();
 			});
-			/*for (auto&atk : tasks.playerAtkmane->getList())
-			{
-				for (auto&bt : tasks.bulletMane->getList())
-				{
-					if (atk->getSharp().intersects(bt->getSharp()))
-					{
-						bt->onHitFlag();
-					}
-				}
-			}*/
 		}
 		bool isAlive()const
 		{
@@ -410,16 +419,54 @@ namespace stgpart
 
 	};
 
+	class MotherShip
+		:public FieldObject
+	{
+	public :
+		Sharp getSharp()const{ return Circle{ 0 }; }
+		MotherShip()
+			:FieldObject(180, 20)
+		{}
+		void updata(TaskMediator&task)override
+		{}
+	};
 
 
-
-	class PlayerData
+	struct PlayerData
 	{
 	public:
-		
-	private:
+		PlayerData()
+			:kill_list(60, 0)
+		{	}
 		int life;
-		int score;
-		
+		long long unsigned int score = 0;
+		void updata()
+		{
+			kill_score -= kill_list.front();
+			kill_list.pop_front();
+			kill_score += now_kill;
+			kill_list.push_back(now_kill);
+
+
+
+
+			if (kill_score > 3)extend();
+			now_kill = 0;
+		}
+		void addKill()		{ ++now_kill; }
+	private:
+		int now_kill = 0;
+		std::list<int> kill_list;
+		int kill_score = 0;
+		void extend()
+		{
+			//‰¹‚Æ‚©‚È‚ç‚µ‚½‚¢
+			life += now_kill;
+		}
 	};
+
+
+
+	
+	
 }
