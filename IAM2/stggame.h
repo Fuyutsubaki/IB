@@ -9,7 +9,7 @@ class testBomb
 	int count;
 public:
 	testBomb(double x, double y, int count)
-		:stgpart::Bomb(x, y), count(count)
+		:stgpart::Bomb(x, y,1000), count(count)
 	{}
 
 	void updata(stgpart::TaskMediator&task)override
@@ -29,7 +29,7 @@ class testPAtk
 {
 public:
 	testPAtk(double x, double y)
-		:stgpart::PlayerAttack(x, y)
+		:stgpart::PlayerAttack(x, y, 5)
 	{}
 	
 	void updata(stgpart::TaskMediator &task)override
@@ -141,18 +141,34 @@ class StgGame
 	std::list<std::shared_ptr<stgpart::MediatorTask>> tasklist;
 	stgpart::TaskMediator mediator;
 	std::shared_ptr<stgpart::Drawer> drawer;
+	std::shared_ptr<stgpart::CheckHit> checkhit;
 	void connectBt()
 	{
-		auto lua = mediator.lua->data();
-		lua_getglobal(lua, "shotStack");
-		lua_pushnil(lua);
-		while (lua_next(lua, -2))
 		{
-			int idx = luaL_ref(lua, LUA_REGISTRYINDEX);
-			auto p = std::make_shared<stgpart::LuaBullet>(0.0, 0., -1, idx, mediator.design->getNone());
-			get().mediator.bulletMane->add(p);
+			auto lua = mediator.lua->data();
+			lua_getglobal(lua, "shotStack");
+			lua_pushnil(lua);
+			while (lua_next(lua, -2))
+			{
+				int idx = luaL_ref(lua, LUA_REGISTRYINDEX);
+				auto p = std::make_shared<stgpart::LuaBullet>(0., 0., idx, mediator.design->getNone(), false);
+				get().mediator.bulletMane->add(p);
+			}
+			lua_pop(lua, 1);
 		}
-		lua_pop(lua, 1);
+		/*{
+			auto lua = mediator.lua->data();
+			lua_getglobal(lua, "putStack");
+			lua_pushnil(lua);
+			while (lua_next(lua, -2))
+			{
+				int idx = luaL_ref(lua, LUA_REGISTRYINDEX);
+				auto p = std::make_shared<stgpart::LuaEnemy>(0., 0., idx, mediator.design->getNone(),false, 0xC0FFEE);
+				get().mediator.bulletMane->add(p);
+			}
+			lua_pop(lua, 1);
+		}*/
+		
 	}
 	void repop()
 	{
@@ -165,14 +181,14 @@ public:
 	StgGame(StgGame const&) = delete;
 	void init()
 	{
+		checkhit = std::make_shared<stgpart::CheckHit>();
 		auto input = std::make_shared<InputKey>();
 
 		auto player = std::make_shared<stgpart::PlayerShipManeger>();
 		auto btmane = std::make_shared<stgpart::BulletManeger>();
 	
-		auto ch = std::make_shared<stgpart::CheckHit>();
-		auto chAB = std::make_shared<stgpart::CheckHitAtkBt>();
-		auto chBomb = std::make_shared<stgpart::checkHitBomb>();
+		
+		
 		auto patk = std::make_shared<stgpart::PlayerAtackManeger>();
 		auto bombMane = std::make_shared<stgpart::BombManeger>();
 		auto drawer = std::make_shared<stgpart::Drawer>();
@@ -185,7 +201,7 @@ public:
 		lua->load_file("test.lua");
 		mediator = stgpart::TaskMediator(player, btmane, patk, bombMane, drawer, lua, input, playerdata, design, motherShip);
 		tasklist.assign(std::initializer_list<std::shared_ptr<stgpart::MediatorTask>>
-		{ btmane, ch, chAB, patk, player, bombMane, chBomb});
+		{ btmane, patk, player, bombMane, checkhit});
 
 		//player->add(std::make_shared<testPlayer>());
 	}

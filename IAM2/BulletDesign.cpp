@@ -20,9 +20,55 @@ void stgpart::Drawer::DrawCricre(double x, double y, int r)
 
 }
 
+
+
+
 namespace stgpart
 {
-	struct BTB :FieldObjectDesign
+	class bomb_local
+		:public Bomb
+	{
+		bomb_local()
+		:Bomb(0, 0, 1000)
+		{
+			
+		}
+		void updata(TaskMediator&)
+		{}
+
+	};
+	class mini_bulletDesign
+		:public FieldObjectDesign
+	{
+	public:
+		void push_bomb(BombManeger&mane)override
+		{
+			
+		}
+	};
+	class neetbomb
+		:public Bomb
+	{
+		neetbomb()
+		:Bomb(0, 0,0)
+		{
+			alive = false;
+		}
+		void updata(TaskMediator&)
+		{}
+
+	};
+	class EnemyDesign
+		:public FieldObjectDesign
+	{
+	public:
+		void push_bomb(BombManeger&mane)override
+		{
+
+		}
+	};
+
+	struct BTB :mini_bulletDesign
 	{
 		int count = 0;
 		Sharp getSharp(double x, double y, double)override
@@ -36,8 +82,9 @@ namespace stgpart
 			static const double root3 = std::sqrt(3);
 			Triangle(x, y, 12 * root3, (count *s3d::Math::Pi / 60 + angle)).draw(Palette::White);
 		}
+		
 	};
-	struct Egg :FieldObjectDesign
+	struct Egg :mini_bulletDesign
 	{
 		Sharp getSharp(double x, double y, double)override{ return{ Circle{ x, y, 7 } }; }
 		void draw(double x, double y, double)override
@@ -47,7 +94,7 @@ namespace stgpart
 		}
 	};
 
-	struct Mini :FieldObjectDesign
+	struct Mini :mini_bulletDesign
 	{
 		Sharp getSharp(double x, double y, double)override{ return{ Circle{ x, y, 3 } }; }
 		void draw(double x, double y, double)override
@@ -56,7 +103,7 @@ namespace stgpart
 		}
 	};
 
-	struct BoxEmy :FieldObjectDesign
+	struct BoxEmy :EnemyDesign
 	{
 		Sharp getSharp(double x, double y, double)override{ return{ RectF{ x + 3, y + 3, 24, 24 } }; }
 		void draw(double x, double y, double)override
@@ -81,10 +128,11 @@ namespace stgpart
 			//None
 		case 0:
 		
-			struct None :FieldObjectDesign
+			struct None :mini_bulletDesign
 			{
 				Sharp getSharp(double, double, double)override{ return{ Circle{ 0 } }; }
 				void draw(double, double, double)override	{  }
+				
 			};
 
 			return std::make_shared<None>();

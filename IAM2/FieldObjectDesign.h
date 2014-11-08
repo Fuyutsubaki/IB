@@ -9,10 +9,12 @@ namespace stgpart
 		struct Error :FieldObjectDesign
 		{
 			Sharp getSharp(double x, double, double ang)override{ return{ Circle{ 0 } }; }
-			void draw(double x, double y, double angle)override	
+			void draw(double, double, double)override	
 			{
 				Circle{ 20 }.draw(Palette::Red);
 			}
+			void push_bomb(BombManeger&)override
+			{		}
 		};
 		std::shared_ptr<FieldObjectDesign> error;
 	public:

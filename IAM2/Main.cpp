@@ -5,7 +5,9 @@
 #include"StgPart.h"
 #include"stggame.h"
 #include<boost\variant.hpp>
-
+//Bombのデザイン
+//UIの確定
+//中身の実装
 
 
 

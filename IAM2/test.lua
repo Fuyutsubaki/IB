@@ -1,4 +1,15 @@
 shotStack={}
+setStack={}
+--current Bullet
+cb=nil;
+--current thread
+ct=nil;
+pi=math.pi
+Long=99999999
+DTriCir=1;DEgg=2;DMini=3
+DEBox=101
+
+
 
 function regBt(x,y,ang,design)
 	local bt={}
@@ -6,13 +17,68 @@ function regBt(x,y,ang,design)
 	bt.y=y
 	bt.ang=ang
 	bt.design=design
+	bt.setter={}
 	table.insert(shotStack,bt)
+	return bt
+end
+function regEnemy(x,y,ang,hp,design)
+	local bt={}
+	bt.x=x
+	bt.y=y
+	bt.ang=ang
+	bt.design=design
+	bt.seter={}
+	bt.hp=hp;
+	table.insert(setStack,bt)
 	return bt
 end
 
 function frameInit()
 	shotStack={}
+	setStack={}
+end
+Co={}
+function Co:updata()
+	cb =self
+	for key,val in ipairs(self.co)do
+		if coroutine.status(val.f)=="dead" then
+			table.remove(self.co,key);
+		end
+	end
+	for _,val in ipairs(self.co)do
+		ct=val
+		coroutine.resume(val.f)
+	end
+	return self.x , self.y ,self.ang,self.design
+end
 
+function regCo(x,y,ang,design,f)
+	local bt=regBt(x,y,ang,design)
+	bt.co={{f=coroutine.create(f),setter={}}}
+	bt.updata=Co.updata;
+	return bt
+end
+function regCoE(x,y,ang,design,f,hp)
+	local bt=regBt(x,y,ang,hp,design)
+	bt.co={{f=coroutine.create(f),setter={}}}
+	bt.updata=Co.updata
+	return bt
+end
+
+
+function set()
+	ct.setter.set()
+end
+-------------------------------------------------------------
+function setBt(design,f)
+	ct.setter={
+		design=design,
+		f=f,
+		set=function()regCo(cb.x,cb.y,cb.ang,ct.setter.design,ct.setter.f)end}
+end
+
+function setE(hp,design,f)
+	ct.setter={design=design,f=f,hp=hp,set=function()regCoE(cb.x,cb.y,cb.ang,ct.setter.design,ct.setter.f,ct.setter.hp)end}
 end
 
 function sleep(n)
@@ -35,81 +101,37 @@ function Time(n,p,f,...)
 	end
 end
 
-Design={
-None=0,TriCir=1,Egg=2,Mini=3
-,BoxEmy=101
-}
-
-
-
-
-function nway(n,ang,f)
-	p=cb.ang
+function nway(n,ang)
+	local tmp=cb.ang
 	for i=0,n-1 do
-		cb.ang=p+ang/(n-1)*(i-n/2.)
-		f()
+		cb.ang=tmp+(ang/(n-1))*(i-(n-1)/2.)
+		set()
 	end
-	cb.ang=p
+	cb.ang=tmp
 end
 
 
-function cirnway(n,f)
+function cirnway(n)
 	local tmp=cb.ang
 	local e=2*pi/n
 	for i=0,n-1 do
 		cb.ang=cb.ang+e
-		f()
+		set()
 	end
 	cb.ang=tmp
 end
 
 
 
-function push(f,...)
+function push(f)
 	local co=coroutine.create(f)
-	coroutine.resume(co,...)
-	table.insert(cb.subco,co)
-	
+	table.insert(cb.co,{f=co,setter={}})
 end
 
-function pushTime(N,p,f,...)
-	push(Time,N,p,f,...)
-end
-Co={}
---current Bullet
-cb=nil;
-function Co:updata()
-	cb =self
-	for key,val in ipairs(self.subco)do
-		if coroutine.status(val)=="dead" then
-			table.remove(self.subco,key);
-		end
-	end
-	for _,val in ipairs(self.subco)do
-		coroutine.resume(val,self)
-	end
-	
-	coroutine.resume(self.co,self)
-	return self.x , self.y ,self.ang,self.design
+function pushTime(N,p,f)
+	push(Time,N,p,f)
 end
 
-function regCo(x,y,ang,design,f)
-	local bt=regBt(x,y,ang,design)
-	bt.subco={}
-	bt.co=coroutine.create(f)
-	bt.updata=Co.updata
-	return bt
-end
-
-
-function shot(design,f)
-	return regCo(cb.x,cb.y,cb.ang,design,f)
-end
-function shota(ang,design,f)
-	return regCo(cb.x,cb.y,ang,design,f)
-end
-pi=math.pi
-Long=99999999
 function move(ang,spd)
 	cb.x=cb.x+math.cos(ang)*spd
 	cb.y=cb.y+math.sin(ang)*spd
@@ -226,6 +248,10 @@ function w12e()
 end
 
 function w11e()
+	setE(300)
+	cirnway(3)
+
+
 	cirnway(3,
 		function()
 			regCo(cb.x,cb.y,cb.ang,Design.TriCir,
@@ -242,15 +268,25 @@ function w11e()
 				end)
 			end)
 end
-
-
-
 function ms1()
 	push(function()
 		Time(3,10,nway(8,pi*2,sinCc(3,70,Design.BoxEmy)))
 	end)
 	moveout(0,360,60)
 end
+function test()
+	push(function()
+		setBt(DMini,function()end)
+		Time(Long,10,nway,3,pi)
+	end)
+	push(function()
+		setBt(DMini ,function()Time(Long,0,movest,3)end)
+		Time(Long,30,nway,5,pi)
+	end)
+	Time(180,0,movest,3)
+end
+
+
 function Main()
-	regCo(400,120,0,Design.BoxEmy,ikarugano)
+	regCo(120,120,0,DEBox,test)
 end

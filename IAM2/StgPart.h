@@ -52,7 +52,9 @@ namespace stgpart
 	class PlayerData;
 	class PlayerShipManeger;
 	class BulletManeger;
+	class EnemyManeger;
 	class PlayerAtackManeger;
+	class Bomb;
 	class BombManeger;
 	class Drawer;
 	struct FieldObjectDesignFactory;
@@ -85,6 +87,7 @@ namespace stgpart
 		design(design),
 		motherShip(motherShip)
 		, effector(std::make_shared<Effector>())
+		, enemymane(std::make_shared<EnemyManeger>())
 		{}
 		TaskMediator(){}
 		std::shared_ptr<PlayerShipManeger> playerMane = nullptr;
@@ -98,6 +101,7 @@ namespace stgpart
 		std::shared_ptr<FieldObjectDesignFactory>design;
 		std::shared_ptr<MotherShip>motherShip;
 		std::shared_ptr<Effector>effector;
+		std::shared_ptr<EnemyManeger>enemymane;
 	};
 	namespace impl
 	{
@@ -254,6 +258,7 @@ namespace stgpart
 	public:
 		virtual Sharp getSharp(double x, double y, double angle) = 0;
 		virtual void draw(double x, double y, double angle) = 0;
+		virtual void push_bomb(BombManeger&) = 0;
 		virtual~FieldObjectDesign(){}
 	};
 	class FieldObject
@@ -319,98 +324,82 @@ namespace stgpart
 		:public FieldObject
 	{
 	protected:
-		int hp;
 		std::shared_ptr<FieldObjectDesign> design;
+		bool isRedFlag;
 	public:
-		using FieldObject::FieldObject;
-		Bullet(double x, double y, int hp, std::shared_ptr<FieldObjectDesign>const&p)
-			:FieldObject(x, y), hp(hp), design(p)
+		bool isRed()const{ return isRedFlag; }
+		Bullet(double x, double y, std::shared_ptr<FieldObjectDesign>const&p, bool red)
+			:FieldObject(x, y), design(p),  isRedFlag(red)
 		{}
 		virtual ~Bullet(){}
 		virtual void onHitFlag() = 0;
+		void push_bomb(BombManeger&mane){ design->push_bomb(mane); }
 	};
 
+	class Enemy
+		:public FieldObject
+	{
+	protected:
+		int hp;
+		std::shared_ptr<FieldObjectDesign> design;
+		bool isRedFlag;
+	public:
+		bool isRed()const{ return isRedFlag; }
+		Enemy(double x, double y, std::shared_ptr<FieldObjectDesign>const&p, bool red)
+			:FieldObject(x, y), design(p),  isRedFlag(red)
+		{}
+		 void addDamage(int dame) { hp -= dame; }
+		virtual ~Enemy(){}
+		
+	};
 	class BulletManeger
 		:public  impl::BasicFieldObjectManeger<impl::ListPolicy<Bullet>>
 	{	};
 
-	class CheckHit
-		:public MediatorTask
-	{
-	public:
-		CheckHit()
-		{}
-		void updata(TaskMediator&tasks)override
-		{
-			tasks.playerMane->intersects(*tasks.bulletMane,
-				[](PlayerShip&p, Bullet&)
-			{
-				p.onHitFlag();
-			});
-		}
-		bool isAlive()const override{ return true; }
-	};
+	class EnemyManeger
+		:public  impl::BasicFieldObjectManeger<impl::ListPolicy<Enemy>>
+	{	};
 
 	class PlayerAttack
 		:public FieldObject
 	{
+		int damage;
 	public:
-		PlayerAttack(double x, double y)
-			:FieldObject(x, y)
+		PlayerAttack(double x, double y,int dmg)
+			:FieldObject(x, y), damage(dmg)
 		{}
+		int getDamage()const{ return damage; }
 	};
 	class PlayerAtackManeger
 		:public impl::BasicFieldObjectManeger<impl::VectorPolicy<PlayerAttack>>
 	{	};
 
-	class CheckHitAtkBt
-		:public MediatorTask
-	{
-	public:
-		void updata(TaskMediator&tasks)override
-		{
-			tasks.playerAtkmane->intersects(*tasks.bulletMane,
-				[&](PlayerAttack&, Bullet&bt)
-			{
-				tasks.effector->addBreakEffect(bt.getPos());
-				bt.onHitFlag();
-			});
-		}
-		bool isAlive()const
-		{
-			return true;
-		}
-	};
-
+	
 	class Bomb
 		:public FieldObject
 	{
+		int damage;
 	public:
-		Bomb(double x, double y)
-			:FieldObject(x, y)
+		Bomb(double x, double y,int dmg)
+			:FieldObject(x, y), damage(dmg)
 		{}
+		int getDamage()const{ return damage; }
 	};
 	class BombManeger
 		:public impl::BasicFieldObjectManeger<impl::VectorPolicy<Bomb>>
 	{	};
-
-	class checkHitBomb
+	class CheckHit
 		:public MediatorTask
 	{
 	public:
-		void updata(TaskMediator&tasks)override
-		{
-			tasks.bombmaneger->intersects(*tasks.bulletMane,
-				[](Bomb&, Bullet&bt)
-			{
-				bt.onHitFlag();
-			});
-		}
+		void updata(TaskMediator&tasks);
 		bool isAlive()const
 		{
 			return true;
 		}
 	};
+
+	
 
 	class Drawer
 	{
@@ -427,7 +416,7 @@ namespace stgpart
 		MotherShip()
 			:FieldObject(180, 20)
 		{}
-		void updata(TaskMediator&task)override
+		void updata(TaskMediator&)override
 		{}
 	};
 
