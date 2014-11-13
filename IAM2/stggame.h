@@ -42,7 +42,26 @@ public:
 		return{ Circle{ x, y, 3 } };
 	}
 };
+class PlayerAtacck
+	:public stgpart::PlayerAttack
+{
+public:
+	PlayerAtacck(double x, double y)
+	:stgpart::PlayerAttack(x, y, 5)
+	{}
 
+	void updata(stgpart::TaskMediator &task)override
+	{
+		x += 12;
+		Rect{ Point{ x, y }, 20, 5 }.draw(Palette::White);
+		if (!Point{ x, y }.intersects(fieldRect()))
+			alive = false;
+	}
+	stgpart::Sharp getSharp()const override
+	{
+		return{ Rect{ Point{ x, y }, 10, 20 } };
+	}
+};
 class Player
 	:public stgpart::PlayerShip
 {
@@ -76,7 +95,11 @@ class Player
 		if (state == State::normal)
 		{
 			if (task.input->shot())
-				task.playerAtkmane->add(std::make_shared<testPAtk>(x, y));
+			{
+				task.effector->addPlayerShotSE();
+				task.playerAtkmane->add(std::make_shared<PlayerAtacck>(x, y));
+			}
+				
 		}
 		
 	}
@@ -127,13 +150,6 @@ public:
 	}
 };
 
-class BackGround
-{
-	void draw()
-	{
-		Rect(0, 0, 640, 480).draw();
-	}
-};
 
 class StgGame
 	:public Task
@@ -145,29 +161,36 @@ class StgGame
 	void connectBt()
 	{
 		{
+			bool hasBullet = false;
 			auto lua = mediator.lua->data();
 			lua_getglobal(lua, "shotStack");
 			lua_pushnil(lua);
 			while (lua_next(lua, -2))
 			{
+				hasBullet = true;
 				int idx = luaL_ref(lua, LUA_REGISTRYINDEX);
 				auto p = std::make_shared<stgpart::LuaBullet>(0., 0., idx, mediator.design->getNone(), false);
 				get().mediator.bulletMane->add(p);
 			}
 			lua_pop(lua, 1);
+			if (hasBullet)
+				mediator.effector->addEnemyShotSE();
 		}
-		/*{
+		{
 			auto lua = mediator.lua->data();
-			lua_getglobal(lua, "putStack");
+			lua_getglobal(lua, "setStack");
 			lua_pushnil(lua);
 			while (lua_next(lua, -2))
 			{
 				int idx = luaL_ref(lua, LUA_REGISTRYINDEX);
-				auto p = std::make_shared<stgpart::LuaEnemy>(0., 0., idx, mediator.design->getNone(),false, 0xC0FFEE);
-				get().mediator.bulletMane->add(p);
+				lua_getfield(lua, 0, "hp");
+				int hp = lua_tointeger(lua, -1);
+				lua_pop(lua, 1);
+				auto p = std::make_shared<stgpart::LuaEnemy>(0., 0., idx, mediator.design->getNone(), false, hp);
+				get().mediator.enemymane->add(p);
 			}
 			lua_pop(lua, 1);
-		}*/
+		}
 		
 	}
 	void repop()
@@ -201,17 +224,15 @@ public:
 		lua->load_file("test.lua");
 		mediator = stgpart::TaskMediator(player, btmane, patk, bombMane, drawer, lua, input, playerdata, design, motherShip);
 		tasklist.assign(std::initializer_list<std::shared_ptr<stgpart::MediatorTask>>
-		{ btmane, patk, player, bombMane, checkhit});
-
-		//player->add(std::make_shared<testPlayer>());
+		{ btmane, patk, player, bombMane, checkhit, mediator.enemymane, mediator.playerdata});
 	}
 	void updata()override
 	{
 		auto p = mediator.design->getNone();
 		mediator.lua->call("frameInit");
 		
-		Rect(0, 0, 640, 480).draw();
-		for (auto&task:tasklist)
+		Rect(0, 0, 960, 540).draw(Palette::Black);
+		for (auto&task : tasklist)
 		{
 			task->updata(mediator);
 		}

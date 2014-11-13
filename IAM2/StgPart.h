@@ -115,6 +115,10 @@ namespace stgpart
 			{
 				list.sort(f);
 			}
+			void add(std::shared_ptr<element_type>const&p)
+			{
+				list.push_front(p);
+			}
 		};
 		template<class ElementType>
 		struct VectorPolicy
@@ -125,6 +129,10 @@ namespace stgpart
 			void sort(Pred f)
 			{
 				std::sort(list.begin(), list.end(), f);
+			}
+			void add(std::shared_ptr<element_type>const&p)
+			{
+				list.push_back(p);
 			}
 		};
 
@@ -154,7 +162,7 @@ namespace stgpart
 			}
 			void add(std::shared_ptr<element_type>const&p)
 			{
-				list.push_back(p);
+				Policy::add(p);
 			}
 			template<class Other,class F>
 			void intersects(Other&other, F f)
@@ -258,7 +266,7 @@ namespace stgpart
 	public:
 		virtual Sharp getSharp(double x, double y, double angle) = 0;
 		virtual void draw(double x, double y, double angle) = 0;
-		virtual void push_bomb(BombManeger&) = 0;
+		virtual void push_bomb(double x, double y, BombManeger&) = 0;
 		virtual~FieldObjectDesign(){}
 	};
 	class FieldObject
@@ -267,7 +275,7 @@ namespace stgpart
 	protected:
 		inline static Rect const& fieldRect()
 		{
-			static const Rect rect = Rect{ 0 - 30, 0 - 30, 480 + 30, 728 + 30 };
+			static const Rect rect = Rect{ 0 - 30, 0 - 30, 960 + 30, 540 + 30 };
 			return rect;
 		}
 		double x;
@@ -302,9 +310,16 @@ namespace stgpart
 	{
 
 	public:
-		
+		Effector();
 		void addBreakEffect(Vec2 p);
+		void addSpriteEffect(Vec2 p);
+		void addPlayerShotSE();
+		void addEnemyShotSE();
+		void addBombSE();
+		void addBreakSE();
+		
 	};
+
 	class PlayerShip
 		:public FieldObject
 	{
@@ -333,7 +348,7 @@ namespace stgpart
 		{}
 		virtual ~Bullet(){}
 		virtual void onHitFlag() = 0;
-		void push_bomb(BombManeger&mane){ design->push_bomb(mane); }
+		void push_bomb(BombManeger&mane){ design->push_bomb(x,y,mane); }
 	};
 
 	class Enemy
@@ -345,8 +360,8 @@ namespace stgpart
 		bool isRedFlag;
 	public:
 		bool isRed()const{ return isRedFlag; }
-		Enemy(double x, double y, std::shared_ptr<FieldObjectDesign>const&p, bool red)
-			:FieldObject(x, y), design(p),  isRedFlag(red)
+		Enemy(double x, double y, std::shared_ptr<FieldObjectDesign>const&p, bool red, int hp)
+			:FieldObject(x, y), design(p), isRedFlag(red), hp(hp)
 		{}
 		 void addDamage(int dame) { hp -= dame; }
 		virtual ~Enemy(){}
@@ -369,6 +384,7 @@ namespace stgpart
 			:FieldObject(x, y), damage(dmg)
 		{}
 		int getDamage()const{ return damage; }
+		void onHitFlag(){ alive = false; }
 	};
 	class PlayerAtackManeger
 		:public impl::BasicFieldObjectManeger<impl::VectorPolicy<PlayerAttack>>
@@ -386,8 +402,11 @@ namespace stgpart
 		int getDamage()const{ return damage; }
 	};
 	class BombManeger
-		:public impl::BasicFieldObjectManeger<impl::VectorPolicy<Bomb>>
-	{	};
+		:public impl::BasicFieldObjectManeger<impl::ListPolicy<Bomb>>
+	{
+	public:
+		void add_basic_bomb(Vec2 const&pos, int r,int damage,int lifetime);
+	};
 	class CheckHit
 		:public MediatorTask
 	{
@@ -422,6 +441,7 @@ namespace stgpart
 
 
 	struct PlayerData
+		:MediatorTask
 	{
 	public:
 		PlayerData()
@@ -429,20 +449,18 @@ namespace stgpart
 		{	}
 		int life;
 		long long unsigned int score = 0;
-		void updata()
+		void updata(TaskMediator&)override
 		{
 			kill_score -= kill_list.front();
 			kill_list.pop_front();
 			kill_score += now_kill;
 			kill_list.push_back(now_kill);
 
-
-
-
 			if (kill_score > 3)extend();
 			now_kill = 0;
 		}
 		void addKill()		{ ++now_kill; }
+		bool isAlive()const override{ return true; }
 	private:
 		int now_kill = 0;
 		std::list<int> kill_list;
@@ -453,9 +471,4 @@ namespace stgpart
 			life += now_kill;
 		}
 	};
-
-
-
-	
-	
 }

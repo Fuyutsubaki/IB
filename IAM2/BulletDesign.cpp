@@ -41,9 +41,9 @@ namespace stgpart
 		:public FieldObjectDesign
 	{
 	public:
-		void push_bomb(BombManeger&mane)override
+		void push_bomb(double x, double y,  BombManeger&mane)override
 		{
-			
+			mane.add_basic_bomb(Vec2{ x, y }, 10, 1000, 30);
 		}
 	};
 	class neetbomb
@@ -62,7 +62,7 @@ namespace stgpart
 		:public FieldObjectDesign
 	{
 	public:
-		void push_bomb(BombManeger&mane)override
+		void push_bomb(double x, double y, BombManeger&mane)override
 		{
 
 		}
@@ -78,9 +78,9 @@ namespace stgpart
 		void draw(double x, double y, double angle)override
 		{
 			++count;
-			Circle(x, y, 12).draw(Palette::Black);
+			Circle(x, y, 12).draw(Palette::White);
 			static const double root3 = std::sqrt(3);
-			Triangle(x, y, 12 * root3, (count *s3d::Math::Pi / 60 + angle)).draw(Palette::White);
+			Triangle(x, y, 12 * root3, (count *s3d::Math::Pi / 60 + angle)).draw(Palette::Black);
 		}
 		
 	};
@@ -89,8 +89,8 @@ namespace stgpart
 		Sharp getSharp(double x, double y, double)override{ return{ Circle{ x, y, 7 } }; }
 		void draw(double x, double y, double)override
 		{
-			Circle(x, y, 7).draw(Palette::Black);
-			Circle(x, y, 12).drawFrame(0.5, 0.5, Palette::Black);
+			Circle(x, y, 7).draw(Palette::White);
+			Circle(x, y, 12).drawFrame(0.5, 0.5, Palette::White);
 		}
 	};
 
@@ -99,13 +99,13 @@ namespace stgpart
 		Sharp getSharp(double x, double y, double)override{ return{ Circle{ x, y, 3 } }; }
 		void draw(double x, double y, double)override
 		{
-			Circle(x, y, 3).draw(Palette::Black);
+			Circle(x, y, 3).draw(Palette::White);
 		}
 	};
 
 	struct BoxEmy :EnemyDesign
 	{
-		Sharp getSharp(double x, double y, double)override{ return{ RectF{ x + 3, y + 3, 24, 24 } }; }
+		Sharp getSharp(double x, double y, double)override{ return{ RectF{ x -15, y -15, 30, 30 } }; }
 		void draw(double x, double y, double)override
 		{
 			using V = Vec2;
@@ -113,12 +113,12 @@ namespace stgpart
 			static V const r{ 15, 15 };
 			static V const cir{ 0, 25 };
 			static V const in{ 12, 12 };
-			RectF{ c - r, 2 * r }.draw(Palette::Black);
+			RectF{ c - r, 2 * r }.draw(Palette::Whitesmoke);
 			
-			Line{ c - cir, c + cir }.draw(1, Palette::Black);
-			Circle{ c - cir, 3 }.drawFrame(1, 0, Palette::Black);
-			Circle{ c + cir, 3 }.drawFrame(1, 0, Palette::Black);
-			RectF{ c - in, 2 * in }.drawFrame(3, 0, Palette::White);
+			Line{ c - cir, c + cir }.draw(1, Palette::Whitesmoke);
+			Circle{ c - cir, 3 }.drawFrame(1, 0, Palette::Whitesmoke);
+			Circle{ c + cir, 3 }.drawFrame(1, 0, Palette::Whitesmoke);
+			RectF{ c - in, 2 * in }.drawFrame(3, 0, Palette::Black);
 		}
 	};
 	std::shared_ptr<FieldObjectDesign> FieldObjectDesignFactory::make_design(int n)

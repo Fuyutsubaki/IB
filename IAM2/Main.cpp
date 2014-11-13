@@ -5,7 +5,6 @@
 #include"StgPart.h"
 #include"stggame.h"
 #include<boost\variant.hpp>
-//Bombのデザイン
 //UIの確定
 //中身の実装
 
@@ -42,17 +41,17 @@ void Main()
 	::AllocConsole();
 	FILE *console;
 	::freopen_s(&console, "CONOUT$", "w", stdout);
-
+	Window::Resize(960, 540);
 	auto &stggame=StgGame::get();
 	
 	stggame.init();
 	bool stop = false;
 	while (System::Update())
 	{
+		if (Input::KeyF5.clicked)break;
 		if (Input::KeyR.clicked)stggame.init(), std::cout << "\n\n=========================\n\n";
 		if (Input::Key0.clicked)stop = !stop;
 		if (stop)continue;
 		stggame.updata();
 	}
-	s3d::TransformedMesh s;
 }

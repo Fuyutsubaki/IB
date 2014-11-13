@@ -13,7 +13,7 @@ namespace stgpart
 			{
 				Circle{ 20 }.draw(Palette::Red);
 			}
-			void push_bomb(BombManeger&)override
+			void push_bomb(double x, double y, BombManeger&)override
 			{		}
 		};
 		std::shared_ptr<FieldObjectDesign> error;

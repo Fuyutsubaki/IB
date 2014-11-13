@@ -67,14 +67,14 @@ namespace stgpart
 		}
 	};
 	class LuaEnemy
-		:public Bullet
+		:public Enemy
 	{
 		int register_index;
 		int design_handle = 0;
-		int hp;
+		
 	public:
-		LuaEnemy(double x, double y, int register_index, std::shared_ptr<FieldObjectDesign>const&p, bool red, bool hp)
-			:Bullet(x, y, p, red), register_index(register_index), hp(hp)
+		LuaEnemy(double x, double y, int register_index, std::shared_ptr<FieldObjectDesign>const&p, bool red, int hp)
+			:Enemy(x, y, p, red, hp), register_index(register_index)
 		{
 			isRedFlag = red;
 		}
@@ -122,11 +122,14 @@ namespace stgpart
 			{
 				alive = false;
 			}
+			if (hp<0)
+			{
+				tasks.effector->addBreakEffect(Vec2{ x, y });
+				tasks.effector->addBreakSE();
+				alive = false;
+			}
 		}
 		Sharp getSharp()const{ return design->getSharp(x, y, angle); }
-		void onHitFlag()
-		{
-			alive = false;
-		}
+		
 	};
 }
