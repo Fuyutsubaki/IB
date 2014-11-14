@@ -1,87 +1,6 @@
 require("gameengine")
-function nway(n,ang)
-	local tmp=cb.ang
-	for i=0,n-1 do
-		cb.ang=tmp+(ang/(n-1))*(i-(n-1)/2.)
-		set()
-	end
-	cb.ang=tmp
-end
-
-
-function cirnway(n)
-	local tmp=cb.ang
-	local e=2*pi/n
-	for i=0,n-1 do
-		cb.ang=cb.ang+e
-		set()
-	end
-	cb.ang=tmp
-end
-
-
-
-function move(ang,spd)
-	cb.x=cb.x+math.cos(ang)*spd
-	cb.y=cb.y+math.sin(ang)*spd
-end
-function movein(ang,len,N)
-	local a=2*len/(N^2)
-	Timei(N,0,function(i)
-			move(ang,a*i)
-		end) 
-	return 2*len/N
-end
-function moveout(ang,len,N)
-	local a=2*len/(N^2)
-	Timei(N,0,function(i) move(ang,a*(N-i))end) 
-	return 0
-end
-
-function moveang(ang)
-	cb.ang=cb.ang+ang
-end
-
-function aim(x,y)
-	return math.atan2(y-cb.y,x-cb.x)
-end
-function length(x,y)
-	local X=(cb.x-x)
-	local Y=(cb.y-y)
-	return math.sqrt(X^2+Y^2)
-end
-
-
-function movest(spd)
-	move(cb.ang,spd)
-end
-function movestin(len,N)
-	local a=2*len/(N^2)
-	Timei(N,0,function(i) movest(a*i)end) 
-	return 2*len/N
-end
-function movestout(len,N)
-	local a=2*len/(N^2)
-	Timei(N,0,
-	function(i) 
-		movest(a*(N-i))
-		end) 
-	return 0
-end
-
-function move_cir(r,spd)
-	moveang(spd/r)
-	movest(spd)
-end
-
-function movestXYBt(x,y)
-	return function()
-		Time(Long,0,function()cb.x=cb.x+x;cb.y=cb.y+y;end)
-	end
-end
-
-
-function ikarugano()
+require("mover")
+function madarabato()
 cirnway(3,
 		function()
 			regCo(cb.x,cb.y,cb.ang,Design.TriCir,
@@ -144,25 +63,7 @@ function w12e()
 end
 
 function w11e()
-	setE(300)
-	cirnway(3)
-
-
-	cirnway(3,
-		function()
-			regCo(cb.x,cb.y,cb.ang,Design.TriCir,
-				function()
-					Time(2,0,movest,18)
-					local spd=2;
-					local r=36
-					push(moveout,pi,270,90)
-					moveang(pi/2)
-					Timei(360,0,function(i)move_cir(r,spd+i/180.)end)
-					Time((pi*r/(2*spd)),0,function()	moveang(2*spd/r);	movest(spd)end)
-					
-					Time(Long,0,function ()movest(spd+2)end)
-				end)
-			end)
+	
 end
 function ms1()
 	push(function()
@@ -189,24 +90,111 @@ end
 
 
 
-
-function wav13()
-	local enemy=function ()
-		push(function()setBt(DTriCir,movestXYBt(3,4));Time(300,10,set)end)
-		Time(Long,0,movest,3);
+function osakanass()
+	local enemy=function (v)
+		return function()push(function()setBt(DTriCir,movestXYBt(-3,v));Time(300,10,set)end)
+		Time(Long,0,move,pi,3);end
 	end
-	setE(300,DEBox,enemy)
+	local enemy2=function(v)
+			return function()
+			
+			push(function() setE(300,DEBox,enemy(v));Time(Long,30,set)end)
+			Time(360,0,function()move(0,2)end)
+			end
+	end
+	setE(12,DEBox,enemy2(4))
+	jump(200,MinY)
 	set()
+	setE(12,DEBox,enemy2(-4))
+	jump(200,MaxY )
+	set()
+end
+
+
+function BlackPenis()
+	local enemy=function (v)
+		return function()push(function()setBt(DTriCir,movestXYBt(3,v));Time(300,10,set)end)
+		Time(Long,0,movest,3);end
+	end
+	local enemy2=function(v)
+			return function()
+			setE(300,DEBox,enemy(v))
+			Time(Long,30,set)
+			end
+	end
+	setE(12,DEBox,enemy2(4))
+	jump(MinX,MinY)
+	set()
+	setE(12,DEBox,enemy2(-4))
+	jump(MinX,MaxY )
+	set()
+end
+
+--Imalice
+function Imalice()
+	local enemy=function(a,len ,lr)
+		return function()
+			movest(36)
+			local spd=2;
+			local r=36
+			push(function()sleep(90);setBt(DMini,movestVBt(3)) Time(10,30,set)end)
+			push(function()moveout(a,len,90) end)
+			moveang(pi/2)
+			Time(360,0,function()move_cir(60,3*lr)end)
+			Time((pi*r/(2*spd)),0,function()	moveang(2*spd/r);	movest(spd)end)
+			Time(Long,0,function ()movest(spd+2)end)
+		end
+	end
+	
+	jump(MaxX,270)
+	setE(MaxX,DEBox ,enemy(pi,270 ,1))
+	cirnway(3)
+	
+	sleep(60)
+	jump(MinX,360)
+	setE(300,DEBox ,enemy(0,180,-1))
+	cirnway(3)
+	sleep(60)
+	jump(MaxX,100)
+	setE(300,DEBox ,enemy(pi,180,1))
+	cirnway(3)
+end
+function Imalice2()
+	local enemy=function(a,len ,lr)
+		return function()
+			local r=48
+			movest(r)
+			local spd=2;
+			
+			push(function()
+				sleep(90);Time(3,60,function() for i=3,6 do setBt(DMini,movestXYBt(i/-2,0));set() end end)
+				end)
+			push(function()setBt(DTriCir,movestVBt(3));sleep(90);Time(3,90,function()seta(getAim())end)end)
+			push(function()moveout(a,len,90) end)
+			moveang(pi/2)
+			Time(360,0,function()move_cir(r,2*lr)end)
+			Time((pi*r/(2*spd)),0,function()	moveang(2*spd/r);	movest(spd)end)
+			Time(Long,0,function ()movest(spd+2)end)
+		end
+	end
+	
+	jump(MaxX,270)
+	setE(MaxX,DEBox ,enemy(pi,270 ,1))
+	cirnway(3)
+end
+
+function wav4()
+
+	local enemy=function(v)
+		movestXYBt(v,0)
+		--down bullet
+	end
 end
 
 
 
 
 
-
-
-
-
 function Main()
-	regCo(120,120,0,DEBox,wav13)
+	regCo(120,120,0,DEBox,Imalice2)
 end

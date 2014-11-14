@@ -110,15 +110,15 @@ namespace stgpart
 		});
 
 		//bullet vs player
-		task.bulletMane->intersects(*task.playerMane,
-			[&](Bullet&, PlayerShip&bt)
+		task.player->intersects(*task.bulletMane,
+			[&](PlayerShip&p, Bullet&)
 		{
-
+			task.effector->addBreakEffect(p.getPos());
 		});
 
 		//enemy vs player
-		task.enemymane->intersects(*task.playerMane,
-			[](Enemy&, PlayerShip&bt)
+		task.player->intersects(*task.enemymane,
+			[](PlayerShip&bt, Enemy&)
 		{
 			
 		});
@@ -143,4 +143,24 @@ namespace stgpart
 
 
 
+	Drawer::Drawer()
+	{
+		TextureAsset::Register(L"player", L"data/myship.png");
+	}
+	void Drawer::drawPlayer(double x, double y)
+	{
+		TextureAsset(L"player").scale(0.5).drawAt(Vec2{ x, y });
+	}
+
+
+	void MotherShip::updata(TaskMediator&task)
+	{
+		//@TODO draw
+		//task.player->
+		if (task.player->isDeadState() && task.playerdata->getLife())
+		{
+			task.playerdata->lostLife();
+			task.player->repop(task.motherShip->getPos());
+		}		
+	}
 }

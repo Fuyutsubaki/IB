@@ -8,8 +8,8 @@ pi=math.pi
 Long=99999999
 DTriCir=1;DEgg=2;DMini=3
 DEBox=101
-MinX=0-30;MaxX=960+30;MinY=0-30;MaxY=540+30;
-
+MinX=0;MaxX=960;MinY=0;MaxY=540;
+playerX=0;playerY=0;
 
 function regBt(x,y,ang,design)
 	local bt={}
@@ -33,7 +33,9 @@ function regEnemy(x,y,ang,design,hp)
 	return bt
 end
 
-function frameInit()
+function frameInit(x,y)
+	playerX=x
+	playerY=y
 	shotStack={}
 	setStack={}
 end
@@ -68,6 +70,12 @@ end
 
 function set()
 	ct.setter.set()
+end
+function seta(ang)
+	local tmp=cb.ang
+	cb.ang=ang;
+	ct.setter.set()
+	cb.ang=tmp;
 end
 -------------------------------------------------------------
 function setBt(design,f)
@@ -109,4 +117,11 @@ end
 
 function pushTime(N,p,f)
 	push(Time,N,p,f)
+end
+
+
+
+function jump(x,y)
+	cb.x=x;
+	cb.y=y;
 end

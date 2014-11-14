@@ -41,7 +41,7 @@ void Main()
 	::AllocConsole();
 	FILE *console;
 	::freopen_s(&console, "CONOUT$", "w", stdout);
-	Window::Resize(960, 540);
+	Window::Resize(960, 600);
 	auto &stggame=StgGame::get();
 	
 	stggame.init();

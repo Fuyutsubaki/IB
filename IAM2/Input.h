@@ -10,6 +10,7 @@ public:
 	bool right(){ return Input::KeyRight.pressed; }
 	bool left(){ return Input::KeyLeft.pressed; }
 	bool shot(){ return Input::KeyZ.pressed; }
+	
 	void updata()override
 	{	}
 	bool isAlive()const override{ return true; }

@@ -67,10 +67,12 @@ class Player
 {
 	//FX–Ê“|‚É‚È‚Á‚½‚Ì‚¾‚æ
 	int bomb_count = 180;
+	int star_time;
 	enum class State
 	{
 		normal
 		,bomb
+		,dead
 	};
 	State state = State::normal;
 
@@ -81,12 +83,12 @@ class Player
 		switch (state)
 		{
 		case State::normal:
-			x += (input->right() - input->left())*3;
-			y += (input->down() - input->up())*3;
-			break;
-		case State::bomb:
 			x += (input->right() - input->left())*5;
 			y += (input->down() - input->up())*5;
+			break;
+		case State::bomb:
+			x += (input->right() - input->left())*8;
+			y += (input->down() - input->up())*8;
 			break;
 		}
 	}
@@ -99,14 +101,14 @@ class Player
 				task.effector->addPlayerShotSE();
 				task.playerAtkmane->add(std::make_shared<PlayerAtacck>(x, y));
 			}
-				
 		}
 		
 	}
 	
 	void draw(stgpart::TaskMediator &task)
 	{
-		task.drawer->DrawCricre(x, y, 6);
+		if (state != State::dead)
+			task.drawer->drawPlayer(x, y);
 	}
 
 	void bomb(stgpart::TaskMediator &task)
@@ -123,7 +125,7 @@ class Player
 			if (r)
 			{
 				task.bombmaneger->add(std::make_shared<testBomb>(x, y, 20));
-				alive = false;
+				state = State::dead;
 			}
 			--bomb_count;
 			break;
@@ -139,6 +141,9 @@ public:
 		shot(task);
 		draw(task);
 		bomb(task);
+		if (Input::KeyC.clicked)
+			task.motherShip->setPos(getPos());
+		if (star_time > 0)--star_time;
 	}
 	stgpart::Sharp getSharp()const
 	{
@@ -146,10 +151,33 @@ public:
 	}
 	void onHitFlag()override
 	{
-		alive = false;
+		state = State::dead;
+	}
+	bool isDeadState()const override{ return state == State::dead; }
+	bool isStar()const{ return star_time; }
+	void repop(Vec2 const&p)
+	{
+		state = State::normal;
+		setPos(p);
+		bomb_count = 180;
+		star_time = 20;
 	}
 };
 
+class GameInfoView
+{
+public:
+	GameInfoView()
+	{
+		FontAsset::Register(L"font",20);
+	}
+	void updata(stgpart::TaskMediator&med)
+	{
+		FontAsset(L"font").draw(
+			Format(L"player_life:", med.playerdata->getLife(),L"killscore",med.playerdata->get_kill_score())
+			, 0, 540);
+	}
+};
 
 class StgGame
 	:public Task
@@ -158,6 +186,7 @@ class StgGame
 	stgpart::TaskMediator mediator;
 	std::shared_ptr<stgpart::Drawer> drawer;
 	std::shared_ptr<stgpart::CheckHit> checkhit;
+	GameInfoView info_view;
 	void connectBt()
 	{
 		{
@@ -196,7 +225,7 @@ class StgGame
 	void repop()
 	{
 		auto pos = mediator.motherShip->getPos();
-		mediator.playerMane->add(std::make_shared<Player>(pos.x, pos.y));
+		//mediator.playerMane->add(std::make_shared<Player>(pos.x, pos.y));
 	}
 
 	StgGame(){}
@@ -207,11 +236,11 @@ public:
 		checkhit = std::make_shared<stgpart::CheckHit>();
 		auto input = std::make_shared<InputKey>();
 
-		auto player = std::make_shared<stgpart::PlayerShipManeger>();
+		
 		auto btmane = std::make_shared<stgpart::BulletManeger>();
 	
 		
-		
+		auto player = std::make_shared<Player>(0, 0);
 		auto patk = std::make_shared<stgpart::PlayerAtackManeger>();
 		auto bombMane = std::make_shared<stgpart::BombManeger>();
 		auto drawer = std::make_shared<stgpart::Drawer>();
@@ -222,14 +251,15 @@ public:
 
 		auto motherShip = std::make_shared<stgpart::MotherShip>();
 		lua->load_file("test.lua");
-		mediator = stgpart::TaskMediator(player, btmane, patk, bombMane, drawer, lua, input, playerdata, design, motherShip);
+		mediator = stgpart::TaskMediator( player,btmane, patk, bombMane, drawer, lua, input, playerdata, design, motherShip);
 		tasklist.assign(std::initializer_list<std::shared_ptr<stgpart::MediatorTask>>
-		{ btmane, patk, player, bombMane, checkhit, mediator.enemymane, mediator.playerdata});
+		{ btmane, patk, mediator.player, bombMane, checkhit, mediator.enemymane, mediator.playerdata,mediator.motherShip});
 	}
 	void updata()override
 	{
 		auto p = mediator.design->getNone();
-		mediator.lua->call("frameInit");
+		auto const pos = mediator.player->getPos();
+		mediator.lua->call("frameInit", pos.x, pos.y);
 		
 		Rect(0, 0, 960, 540).draw(Palette::Black);
 		for (auto&task : tasklist)
@@ -240,9 +270,9 @@ public:
 		if (Input::KeySpace.clicked)
 			mediator.lua->call("Main");
 		if (Input::KeyP.clicked)repop();
-		if (Input::KeyM.clicked)
-			mediator.motherShip->setPos(mediator.playerMane->getList().begin()->get()->getPos());
+		
 		connectBt();
+		info_view.updata(mediator);
 	}
 	bool isAlive()const override
 	{

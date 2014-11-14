@@ -60,12 +60,12 @@ namespace stgpart
 	struct FieldObjectDesignFactory;
 	class Effector;
 	class MotherShip;
-	
+	class PlayerShip;
 
 	struct TaskMediator
 	{
 		TaskMediator(
-		std::shared_ptr<PlayerShipManeger>const& playerMane,
+		std::shared_ptr<PlayerShip>const&player,
 		std::shared_ptr<BulletManeger>const&bulletMane,
 		std::shared_ptr<PlayerAtackManeger>const&playerAtkmane,
 		std::shared_ptr<BombManeger>const&bombmaneger,
@@ -76,7 +76,7 @@ namespace stgpart
 		std::shared_ptr<FieldObjectDesignFactory>const&design,
 		std::shared_ptr<MotherShip>const&motherShip
 		)
-		:playerMane(playerMane),
+		:player(player),
 		bulletMane(bulletMane),
 		playerAtkmane(playerAtkmane),
 		bombmaneger(bombmaneger),
@@ -90,7 +90,7 @@ namespace stgpart
 		, enemymane(std::make_shared<EnemyManeger>())
 		{}
 		TaskMediator(){}
-		std::shared_ptr<PlayerShipManeger> playerMane = nullptr;
+		std::shared_ptr<PlayerShip> player;
 		std::shared_ptr<BulletManeger>bulletMane = nullptr;
 		std::shared_ptr<PlayerAtackManeger>playerAtkmane = nullptr;
 		std::shared_ptr<BombManeger>bombmaneger = nullptr;
@@ -275,7 +275,7 @@ namespace stgpart
 	protected:
 		inline static Rect const& fieldRect()
 		{
-			static const Rect rect = Rect{ 0 - 30, 0 - 30, 960 + 30, 540 + 30 };
+			static const Rect rect = Rect{ 0 - 30, 0 - 30, 960 + 60, 540 + 60 };
 			return rect;
 		}
 		double x;
@@ -329,11 +329,25 @@ namespace stgpart
 		{}
 		virtual void onHitFlag()=0;
 		virtual~PlayerShip(){}
+		template<class Other,class F>
+		void intersects(Other&other, F f)
+		{
+			for (auto &y : other.getList())
+			{
+				if (getSharp().intersects(y->getSharp()))
+					f(*this, *y);
+			}
+		}
+		virtual bool isDeadState()const = 0;
+		virtual bool isStar()const = 0;
+		virtual void repop(Vec2 const&p) = 0;
 	};
 
 	class PlayerShipManeger
 		:public  impl::BasicFieldObjectManeger<impl::ListPolicy<PlayerShip>>
-	{	};
+	{
+
+	};
 
 	class Bullet
 		:public FieldObject
@@ -423,8 +437,10 @@ namespace stgpart
 	class Drawer
 	{
 	public:
+		Drawer();
+		
 		void DrawCricre(double x, double y, int r);
-
+		void drawPlayer(double x, double y);
 	};
 
 	class MotherShip
@@ -435,20 +451,24 @@ namespace stgpart
 		MotherShip()
 			:FieldObject(180, 20)
 		{}
-		void updata(TaskMediator&)override
-		{}
+		void updata(TaskMediator&)override;
+		
 	};
 
 
-	struct PlayerData
-		:MediatorTask
+	class PlayerData
+		:public MediatorTask
 	{
+		int life = 10;
+		long long unsigned int score = 0;
+		
 	public:
 		PlayerData()
 			:kill_list(60, 0)
 		{	}
-		int life;
-		long long unsigned int score = 0;
+		int getLife(){ return life; }
+		int get_kill_score(){ return kill_score; }
+		void lostLife(){ --life; }
 		void updata(TaskMediator&)override
 		{
 			kill_score -= kill_list.front();
@@ -456,10 +476,10 @@ namespace stgpart
 			kill_score += now_kill;
 			kill_list.push_back(now_kill);
 
-			if (kill_score > 3)extend();
-			now_kill = 0;
+			if (kill_score > 2)extend();
+			now_kill = 0;	
 		}
-		void addKill()		{ ++now_kill; }
+		void addKill()				{ ++now_kill; }
 		bool isAlive()const override{ return true; }
 	private:
 		int now_kill = 0;
@@ -468,7 +488,10 @@ namespace stgpart
 		void extend()
 		{
 			//‰¹‚Æ‚©‚È‚ç‚µ‚½‚¢
-			life += now_kill;
+			if ((kill_score - now_kill) > 2)
+				life += now_kill;
+			else
+				life += (kill_score + now_kill - 2);
 		}
 	};
 }

@@ -71,7 +71,7 @@ namespace stgpart
 	{
 		int register_index;
 		int design_handle = 0;
-		
+		int lifetime = 0;
 	public:
 		LuaEnemy(double x, double y, int register_index, std::shared_ptr<FieldObjectDesign>const&p, bool red, int hp)
 			:Enemy(x, y, p, red, hp), register_index(register_index)
@@ -114,20 +114,24 @@ namespace stgpart
 
 		void updata(TaskMediator& tasks)override
 		{
+			
 			auto p = tasks.design->getNone();
 			updata_script(tasks);
 
 			design->draw(x, y, angle);
-			if (!fieldRect().intersects(Point(x, y)))
+			if (lifetime>60 && !fieldRect().intersects(Point(x, y)))
 			{
 				alive = false;
 			}
 			if (hp<0)
 			{
 				tasks.effector->addBreakEffect(Vec2{ x, y });
-				tasks.effector->addBreakSE();
+				tasks.effector->addBreakSE(); 
+				tasks.playerdata->addKill();
 				alive = false;
 			}
+			++lifetime;
+		
 		}
 		Sharp getSharp()const{ return design->getSharp(x, y, angle); }
 		
