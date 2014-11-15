@@ -7,7 +7,7 @@
 #include<boost\variant.hpp>
 //UIÇÃämíË
 //íÜêgÇÃé¿ëï
-
+//score 
 
 
 void Main()
@@ -37,21 +37,18 @@ void Main()
 	chAB->updata(*tasks);
 	patk->updata(*tasks);
 	}*/
-
-	::AllocConsole();
+	/*::AllocConsole();
 	FILE *console;
-	::freopen_s(&console, "CONOUT$", "w", stdout);
+	::freopen_s(&console, "CONOUT$", "w", stdout);*/
+	Window::SetTitle(L"ÇÕÇÈÇÕÇ†ÇØÇ⁄ÇÃÅAâ‰ÇÕíeä€");
 	Window::Resize(960, 600);
-	auto &stggame=StgGame::get();
+	StgGame stggame ;
 	
 	stggame.init();
 	bool stop = false;
 	while (System::Update())
 	{
-		if (Input::KeyF5.clicked)break;
-		if (Input::KeyR.clicked)stggame.init(), std::cout << "\n\n=========================\n\n";
-		if (Input::Key0.clicked)stop = !stop;
-		if (stop)continue;
 		stggame.updata();
 	}
+
 }

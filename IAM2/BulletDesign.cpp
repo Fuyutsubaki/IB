@@ -1,25 +1,25 @@
 #include<Siv3D.hpp>
 #include"StgPart.h"
 #include"FieldObjectDesign.h"
-
-void stgpart::Drawer::DrawCricre(double x, double y, int r)
-{
-	//Circle(x, y, 7).draw(Palette::Black);
-	//Circle(x, y, 12).drawFrame(0.5, 0.5, Palette::Black);
-
-	/*Circle(x, y + 4, 3).draw(Palette::Black);
-	Circle(x + 4, y, 3).draw(Palette::Black);
-	Circle(x - 4, y, 3).draw(Palette::Black);
-	Circle(x, y - 4, 3).draw(Palette::Black);*/
-
-	/*Circle(x, y, 12).draw(Palette::Black);
-	static const double root3 = std::sqrt(3);
-	Triangle(x, y, 12*root3).draw(Palette::White);*/
-
-	Circle(x, y, r).draw(Palette::Red);
-
-}
-
+//
+//void stgpart::Drawer::DrawCricre(double x, double y, int r)
+//{
+//	//Circle(x, y, 7).draw(Palette::Black);
+//	//Circle(x, y, 12).drawFrame(0.5, 0.5, Palette::Black);
+//
+//	/*Circle(x, y + 4, 3).draw(Palette::Black);
+//	Circle(x + 4, y, 3).draw(Palette::Black);
+//	Circle(x - 4, y, 3).draw(Palette::Black);
+//	Circle(x, y - 4, 3).draw(Palette::Black);*/
+//
+//	/*Circle(x, y, 12).draw(Palette::Black);
+//	static const double root3 = std::sqrt(3);
+//	Triangle(x, y, 12*root3).draw(Palette::White);*/
+//
+//	Circle(x, y, r).draw(Palette::Red);
+//
+//}
+//
 
 
 
@@ -43,7 +43,7 @@ namespace stgpart
 	public:
 		void push_bomb(double x, double y,  BombManeger&mane)override
 		{
-			mane.add_basic_bomb(Vec2{ x, y }, 10, 1000, 30);
+			mane.add_sub_bomb(Vec2{ x, y }, 20, 1000, 30);
 		}
 	};
 	class neetbomb
@@ -121,6 +121,14 @@ namespace stgpart
 			RectF{ c - in, 2 * in }.drawFrame(3, 0, Palette::Black);
 		}
 	};
+
+	struct Inv :EnemyDesign
+	{
+		Sharp getSharp(double, double, double)override{ return{ Circle{ 0 } }; }
+		void draw(double x, double y, double)override
+		{
+		}
+	};
 	std::shared_ptr<FieldObjectDesign> FieldObjectDesignFactory::make_design(int n)
 	{
 		switch (n)
@@ -148,9 +156,13 @@ namespace stgpart
 
 		case 101:
 			return std::make_shared<BoxEmy>();
+		case 999:
+			return std::make_shared<Inv>();
 		default:
 			return error;
 		}
+
+		
 	}
 
 

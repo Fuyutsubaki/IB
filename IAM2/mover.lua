@@ -90,4 +90,6 @@ function getAim()
 	return math.atan2(playerY-cb.y,playerX-cb.x);
 end
 
-
+function getLen()
+	return math.sqrt((playerY-cb.y)*(playerY-cb.y)+(playerX-cb.x)*(playerX-cb.x))
+end

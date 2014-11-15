@@ -3,45 +3,45 @@
 #include"LuaBullet.h"
 
 #include"FieldObjectDesign.h"
-class testBomb
-	:public stgpart::Bomb
-{
-	int count;
-public:
-	testBomb(double x, double y, int count)
-		:stgpart::Bomb(x, y,1000), count(count)
-	{}
+//class testBomb
+//	:public stgpart::Bomb
+//{
+//	int count;
+//public:
+//	testBomb(double x, double y, int count)
+//		:stgpart::Bomb(x, y,1000), count(count)
+//	{}
+//
+//	void updata(stgpart::TaskMediator&task)override
+//	{
+//		task.drawer->DrawCricre(x, y, 40);
+//		--count;
+//		if (count<0)alive = false;
+//	}
+//	stgpart::Sharp getSharp()const override
+//	{
+//		return{ Circle{ x, y, 40 } };
+//	}
+//};
 
-	void updata(stgpart::TaskMediator&task)override
-	{
-		task.drawer->DrawCricre(x, y, 40);
-		--count;
-		if (count<0)alive = false;
-	}
-	stgpart::Sharp getSharp()const override
-	{
-		return{ Circle{ x, y, 40 } };
-	}
-};
-
-class testPAtk
-	:public stgpart::PlayerAttack
-{
-public:
-	testPAtk(double x, double y)
-		:stgpart::PlayerAttack(x, y, 5)
-	{}
-	
-	void updata(stgpart::TaskMediator &task)override
-	{
-		x += 4;
-		task.drawer->DrawCricre(x, y, 3);
-	}
-	stgpart::Sharp getSharp()const override
-	{
-		return{ Circle{ x, y, 3 } };
-	}
-};
+//class testPAtk
+//	:public stgpart::PlayerAttack
+//{
+//public:
+//	testPAtk(double x, double y)
+//		:stgpart::PlayerAttack(x, y, 5)
+//	{}
+//	
+//	void updata(stgpart::TaskMediator &task)override
+//	{
+//		x += 4;
+//		task.drawer->DrawCricre(x, y, 3);
+//	}
+//	stgpart::Sharp getSharp()const override
+//	{
+//		return{ Circle{ x, y, 3 } };
+//	}
+//};
 class PlayerAtacck
 	:public stgpart::PlayerAttack
 {
@@ -80,23 +80,37 @@ class Player
 	void move(stgpart::TaskMediator &task)
 	{
 		auto const&input = task.input;
+		auto f=[&](int spd)
+		{
+			auto tmp = Vec2{ x, y };
+			auto v = input->arrow() * spd;
+			x += v.x;
+			y += v.y;
+			if (!Point(x, y).intersects(fieldInnerRect()))
+			{
+				x = tmp.x;
+				y = tmp.y;
+			}
+		};
 		switch (state)
 		{
 		case State::normal:
-			x += (input->right() - input->left())*5;
-			y += (input->down() - input->up())*5;
-			break;
+		{
+							  f(5);
+		}return;
 		case State::bomb:
-			x += (input->right() - input->left())*8;
-			y += (input->down() - input->up())*8;
-			break;
+		{
+							f(9);
+			
+		}return;
+			
 		}
 	}
 	void shot(stgpart::TaskMediator &task)
 	{
 		if (state == State::normal)
 		{
-			if (task.input->shot())
+			if (task.input->A())
 			{
 				task.effector->addPlayerShotSE();
 				task.playerAtkmane->add(std::make_shared<PlayerAtacck>(x, y));
@@ -116,15 +130,15 @@ class Player
 		switch (state)
 		{
 		case State::normal:
-			if (Input::KeyX.clicked)
+			if (task.input->B_click())
 				state = State::bomb;
 			break;
 
 		case State::bomb:
-			bool r = Input::KeyX.released || (bomb_count == 0);
+			bool r = task.input->B_release() || (bomb_count == 0);
 			if (r)
 			{
-				task.bombmaneger->add(std::make_shared<testBomb>(x, y, 20));
+				task.bombmaneger->add_basic_bomb(Vec2{ x, y }, 60, 1000, 40);
 				state = State::dead;
 			}
 			--bomb_count;
@@ -134,14 +148,16 @@ class Player
 public:
 	Player(double x, double y)
 		:stgpart::PlayerShip(x, y)
-	{}
+	{
+			repop(Vec2{ x, y });
+	}
 	void updata(stgpart::TaskMediator &task)
 	{
 		move(task);
 		shot(task);
 		draw(task);
 		bomb(task);
-		if (Input::KeyC.clicked)
+		if (task.input->C_click())
 			task.motherShip->setPos(getPos());
 		if (star_time > 0)--star_time;
 	}
@@ -174,10 +190,32 @@ public:
 	void updata(stgpart::TaskMediator&med)
 	{
 		FontAsset(L"font").draw(
-			Format(L"player_life:", med.playerdata->getLife(),L"killscore",med.playerdata->get_kill_score())
+			Format(L"player_life:", med.playerdata->getLife(),L"killscore",med.playerdata->get_kill_score(),L"Score",med.playerdata->getScore())
 			, 0, 540);
 	}
 };
+
+class BackGround
+{
+	Texture texture;
+	int n = 0;
+public:
+	BackGround()
+		:texture(L"data/BG.png")
+	{}
+	void updata()
+	{
+		
+		
+		texture.draw(Alpha(std::sin(n / 90 * Pi) * 128 + 128));
+
+	}
+
+
+
+};
+
+
 
 class StgGame
 	:public Task
@@ -187,6 +225,7 @@ class StgGame
 	std::shared_ptr<stgpart::Drawer> drawer;
 	std::shared_ptr<stgpart::CheckHit> checkhit;
 	GameInfoView info_view;
+	BackGround backGround;
 	void connectBt()
 	{
 		{
@@ -199,7 +238,7 @@ class StgGame
 				hasBullet = true;
 				int idx = luaL_ref(lua, LUA_REGISTRYINDEX);
 				auto p = std::make_shared<stgpart::LuaBullet>(0., 0., idx, mediator.design->getNone(), false);
-				get().mediator.bulletMane->add(p);
+				mediator.bulletMane->add(p);
 			}
 			lua_pop(lua, 1);
 			if (hasBullet)
@@ -216,7 +255,7 @@ class StgGame
 				int hp = lua_tointeger(lua, -1);
 				lua_pop(lua, 1);
 				auto p = std::make_shared<stgpart::LuaEnemy>(0., 0., idx, mediator.design->getNone(), false, hp);
-				get().mediator.enemymane->add(p);
+				mediator.enemymane->add(p);
 			}
 			lua_pop(lua, 1);
 		}
@@ -227,9 +266,17 @@ class StgGame
 		auto pos = mediator.motherShip->getPos();
 		//mediator.playerMane->add(std::make_shared<Player>(pos.x, pos.y));
 	}
-
-	StgGame(){}
+	enum State
+	{
+		game,
+		dead,
+		title
+	};
+	State state = State::title;
+	Font font;
+	std::shared_ptr<stgpart::PlayerShip> player;
 public:
+	StgGame(){}
 	StgGame(StgGame const&) = delete;
 	void init()
 	{
@@ -240,7 +287,7 @@ public:
 		auto btmane = std::make_shared<stgpart::BulletManeger>();
 	
 		
-		auto player = std::make_shared<Player>(0, 0);
+		player = std::make_shared<Player>(0, 0);
 		auto patk = std::make_shared<stgpart::PlayerAtackManeger>();
 		auto bombMane = std::make_shared<stgpart::BombManeger>();
 		auto drawer = std::make_shared<stgpart::Drawer>();
@@ -253,37 +300,100 @@ public:
 		lua->load_file("test.lua");
 		mediator = stgpart::TaskMediator( player,btmane, patk, bombMane, drawer, lua, input, playerdata, design, motherShip);
 		tasklist.assign(std::initializer_list<std::shared_ptr<stgpart::MediatorTask>>
-		{ btmane, patk, mediator.player, bombMane, checkhit, mediator.enemymane, mediator.playerdata,mediator.motherShip});
+		{ btmane, patk,  bombMane, checkhit, mediator.enemymane, mediator.playerdata,mediator.motherShip});
+
+		
+		mediator.player->setPos(mediator.motherShip->getPos());
 	}
-	void updata()override
+
+
+	void game_mode()
 	{
 		auto p = mediator.design->getNone();
 		auto const pos = mediator.player->getPos();
-		mediator.lua->call("frameInit", pos.x, pos.y);
 		
 		Rect(0, 0, 960, 540).draw(Palette::Black);
+		Rect(0, 540, 960, 600).draw(Palette::Aquamarine);
+		backGround.updata();
 		for (auto&task : tasklist)
 		{
 			task->updata(mediator);
 		}
 		mediator.effector->updata(mediator);
-		if (Input::KeySpace.clicked)
+		if (Input::Key0.clicked)
 			mediator.lua->call("Main");
-		if (Input::KeyP.clicked)repop();
 		
 		connectBt();
 		info_view.updata(mediator);
+
+		
+		mediator.lua->call("frameInit", pos.x, pos.y);
+
+	}
+
+	void game_play()
+	{
+		mediator.player->updata(mediator);
+		if (mediator.playerdata->getLife() <= 0)
+		{
+			state = State::dead;
+		}
+	}
+	void game_over()
+	{
+		Rect{ 100, 100, 500, 200 }.draw(Palette::Black);
+		font.draw(L"Game Over", 150, 100);
+		font.draw(L"Zキーでタイトル、Cキーで呟く",150, 150);
+		if (mediator.input->A_click())
+		{
+			state = State::title;
+			mediator.effector->endBGM();
+			init();
+		}
+		if (mediator.input->C_click())
+		{
+			Twitter::OpenTweetWindow(Format(L"はるはあけぼの、我は弾丸で", mediator.playerdata->getScore(), L"点をたたき出しました"));
+		}
+			
+	}
+	void titleMode()
+	{
+		Rect{ 100, 100, 500, 200 }.draw(Palette::Black);
+		font.draw(L"Zキーでスタート", 150, 150);
+		if (mediator.input->A_click())
+		{
+			init();
+			mediator.effector->beginBGM();
+			state = State::game;
+			mediator.lua->call("Main");
+		}
+		
+	}
+	void updata()override
+	{
+		game_mode();
+		switch (state)
+		{
+		case State::game:
+			game_play();
+			break;
+		case State::dead:
+			game_over();
+			break;
+
+		case State::title:
+			titleMode();
+			break;
+		default:
+			break;
+		}
 	}
 	bool isAlive()const override
 	{
 		return true;
 	}
 
-	static StgGame&get()
-	{
-		static StgGame a;
-		return a;
-	}
+	
 private:
 	
 	

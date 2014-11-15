@@ -88,7 +88,46 @@ function test()
 	set()
 end
 
+function last_dance()
+	local enemy=function(N)
+		movein(getAim()+pi/12,getLen()/4,N)
+		sleep(N)
+		local a=getAim()
+		local len=getLen()
+		setBt(DEgg,movestVBt(len/N));
+		Time(10,8,seta,a)
+		Time(Long,0,move,a+pi,4)
+	end
+	
+	local lam=function(N)
+		local rand=math.random(MinY,MaxY)
+		jump(MinX,rand)
+		setE(12,DEBox,function()enemy(N)end)
+		set()
+		rand=math.random(MinY,MaxY)
+		jump(MaxX,rand)
+		setE(12,DEBox,function()enemy(N)end)
+		set()
+		rand=math.random(MinX,MaxX)
+		jump(rand,MinY)
+		setE(12,DEBox,function()enemy(N)end)
+		set()
+		rand=math.random(MinX,MaxX)
+		jump(rand,MaxY)
+		setE(12,DEBox,function()enemy(N)end)
+		set()
+	end
+	
+	for i=0,14 do
+		lam(100-i*5)
+		sleep((100-i*5)*3)
+	end
+		for i=0,15 do
+		lam(30-i/3)
+		sleep((30-i/3)*3)
+	end
 
+end
 
 function osakanass()
 	local enemy=function (v)
@@ -100,14 +139,17 @@ function osakanass()
 			
 			push(function() setE(300,DEBox,enemy(v));Time(Long,30,set)end)
 			Time(360,0,function()move(0,2)end)
+			jump(Long,Long)
 			end
 	end
+	
 	setE(12,DEBox,enemy2(4))
 	jump(200,MinY)
 	set()
 	setE(12,DEBox,enemy2(-4))
 	jump(200,MaxY )
 	set()
+	sleep(720)
 end
 
 
@@ -119,18 +161,37 @@ function BlackPenis()
 	local enemy2=function(v)
 			return function()
 			setE(300,DEBox,enemy(v))
-			Time(Long,30,set)
+			Time(15,30,set)
+			jump(Long,Long)
 			end
 	end
-	setE(12,DEBox,enemy2(4))
+	local enemy3=function()
+		push(function()setBt(DEgg,movestXYBt(0,3));Time(Long,20,set)end);
+		push(function()setBt(DEgg,movestXYBt(0,-3));Time(Long,20,set)end);
+		Time(Long,0,move,pi,3)
+	end
+	local enemy4=function()
+		setE(250,DEBox,enemy3)
+		Time(7,15,set)
+		jump(Long,Long)
+	end
+	
+	
+	
+	
+	setE(12,DInv,enemy2(4))
 	jump(MinX,MinY)
 	set()
-	setE(12,DEBox,enemy2(-4))
+	setE(12,DInv,enemy2(-4))
 	jump(MinX,MaxY )
 	set()
+	jump(MaxX-30,360 )
+	setE(12,DInv,enemy4)
+	set()
+	sleep(680)
 end
 
---Imalice
+
 function Imalice()
 	local enemy=function(a,len ,lr)
 		return function()
@@ -160,7 +221,7 @@ function Imalice()
 	cirnway(3)
 end
 function Imalice2()
-	local enemy=function(a,len ,lr)
+	local enemy=function(a,len ,lr,s)
 		return function()
 			local r=48
 			movest(r)
@@ -170,7 +231,7 @@ function Imalice2()
 				sleep(90);Time(3,60,function() for i=3,6 do setBt(DMini,movestXYBt(i/-2,0));set() end end)
 				end)
 			push(function()setBt(DTriCir,movestVBt(3));sleep(90);Time(3,90,function()seta(getAim())end)end)
-			push(function()moveout(a,len,90) end)
+			push(function()moveout(a,len,s) end)
 			moveang(pi/2)
 			Time(360,0,function()move_cir(r,2*lr)end)
 			Time((pi*r/(2*spd)),0,function()	moveang(2*spd/r);	movest(spd)end)
@@ -179,22 +240,63 @@ function Imalice2()
 	end
 	
 	jump(MaxX,270)
-	setE(MaxX,DEBox ,enemy(pi,270 ,1))
+	setE(MaxX,DEBox ,enemy(pi,270 ,1,90))
 	cirnway(3)
+	
+	sleep(600)
+	
+	jump(MaxX,270)
+	setE(300,DEBox ,enemy(pi,100 ,1,60))
+	cirnway(3)
+	
+	sleep(180)
+	jump(MaxX,360)
+	setE(200,DEBox ,enemy(pi,480 ,1,150))
+	cirnway(3)
+	sleep(600)
 end
 
-function wav4()
+function dynam()
 
-	local enemy=function(v)
-		movestXYBt(v,0)
-		--down bullet
+	local enemy=function(a)
+		
+		
+		push(function()setBt(DEgg,movestXYBt(0,3));Time(Long,10,set)end)
+		Time(Long,0,move,a,6)
 	end
+	local enemy2=function(a)
+		setE(500,DEBox,function()enemy(a)end)
+		Time(5,13,set)
+		jump(Long,Long)
+	end
+	local benri=function(h)
+		setE(12,DInv,function()enemy2(0)end)
+		jump(MinX,h)
+		set()
+		setE(12,DInv,function()enemy2(pi)end)
+		jump(MaxX,h)
+		set()
+		sleep(90)
+	end
+	
+	benri(360)
+	benri(240)
+	benri(120)
+	benri(30)
 end
 
 
 
-
+function game()
+	Imalice2()
+	Imalice()
+	osakanass()
+	
+	BlackPenis()
+	dynam()
+	last_dance()
+end
 
 function Main()
-	regCo(120,120,0,DEBox,Imalice2)
+	regCo(120,120,0,DInv,game)
 end

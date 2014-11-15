@@ -8,8 +8,13 @@ pi=math.pi
 Long=99999999
 DTriCir=1;DEgg=2;DMini=3
 DEBox=101
+DInv=999;
 MinX=0;MaxX=960;MinY=0;MaxY=540;
 playerX=0;playerY=0;
+
+clear_flag=0
+
+
 
 function regBt(x,y,ang,design)
 	local bt={}

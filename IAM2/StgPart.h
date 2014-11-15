@@ -278,6 +278,11 @@ namespace stgpart
 			static const Rect rect = Rect{ 0 - 30, 0 - 30, 960 + 60, 540 + 60 };
 			return rect;
 		}
+		inline static Rect const& fieldInnerRect()
+		{
+			static const Rect rect = Rect{ 0, 0, 960, 540 };
+			return rect;
+		}
 		double x;
 		double y;
 		double angle;
@@ -308,7 +313,7 @@ namespace stgpart
 	class Effector
 		:public impl::BasicFieldObjectManeger<impl::VectorPolicy<FieldObject>>
 	{
-
+		Sound bgm;
 	public:
 		Effector();
 		void addBreakEffect(Vec2 p);
@@ -317,7 +322,8 @@ namespace stgpart
 		void addEnemyShotSE();
 		void addBombSE();
 		void addBreakSE();
-		
+		void beginBGM();
+		void endBGM();
 	};
 
 	class PlayerShip
@@ -378,6 +384,7 @@ namespace stgpart
 			:FieldObject(x, y), design(p), isRedFlag(red), hp(hp)
 		{}
 		 void addDamage(int dame) { hp -= dame; }
+		 void onHitFlag(){ alive = false; }
 		virtual ~Enemy(){}
 		
 	};
@@ -420,6 +427,7 @@ namespace stgpart
 	{
 	public:
 		void add_basic_bomb(Vec2 const&pos, int r,int damage,int lifetime);
+		void add_sub_bomb(Vec2 const&pos, int r, int damage, int lifetime);
 	};
 	class CheckHit
 		:public MediatorTask
@@ -438,19 +446,17 @@ namespace stgpart
 	{
 	public:
 		Drawer();
-		
-		void DrawCricre(double x, double y, int r);
 		void drawPlayer(double x, double y);
+		
 	};
 
 	class MotherShip
 		:public FieldObject
 	{
+		int count = 0;
 	public :
 		Sharp getSharp()const{ return Circle{ 0 }; }
-		MotherShip()
-			:FieldObject(180, 20)
-		{}
+		MotherShip();
 		void updata(TaskMediator&)override;
 		
 	};
@@ -468,6 +474,7 @@ namespace stgpart
 		{	}
 		int getLife(){ return life; }
 		int get_kill_score(){ return kill_score; }
+		long long unsigned int getScore(){ return score; };
 		void lostLife(){ --life; }
 		void updata(TaskMediator&)override
 		{
@@ -481,17 +488,16 @@ namespace stgpart
 		}
 		void addKill()				{ ++now_kill; }
 		bool isAlive()const override{ return true; }
+		void addscore(int){ score += 6000; }
 	private:
 		int now_kill = 0;
 		std::list<int> kill_list;
 		int kill_score = 0;
 		void extend()
 		{
-			//‰¹‚Æ‚©‚È‚ç‚µ‚½‚¢
-			if ((kill_score - now_kill) > 2)
-				life += now_kill;
-			else
-				life += (kill_score + now_kill - 2);
+			int n = ((kill_score - now_kill) > 2) ? now_kill : (kill_score + now_kill - 2);
+			addscore(n * 6000);
+			life += n;
 		}
 	};
 }

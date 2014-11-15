@@ -59,13 +59,13 @@
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
-      <AdditionalIncludeDirectories>C:\file\lib\boost_1_55_0\Include;C:\file\lib\luaexe\5.1\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\file\lib\boost_1_55_0\Include;C:\file\lib\LuaJIT-2.0.3</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>C:\file\lib\luaexe\5.1\lib</AdditionalLibraryDirectories>
-      <AdditionalDependencies>lua5.1.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>C:\file\lib\luaexe\5.1\lib;C:\file\lib\LuaJIT-2.0.3\luajit</AdditionalLibraryDirectories>
+      <AdditionalDependencies>lua51.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -80,15 +80,15 @@
       <SDLCheck>true</SDLCheck>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
-      <AdditionalIncludeDirectories>C:\file\lib\boost_1_55_0\Include;C:\file\lib\luaexe\5.1\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\file\lib\boost_1_55_0\Include;C:\file\lib\LuaJIT-2.0.3</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalLibraryDirectories>C:\file\lib\luaexe\5.1\lib</AdditionalLibraryDirectories>
-      <AdditionalDependencies>lua5.1.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>C:\file\lib\luaexe\5.1\lib;C:\file\lib\LuaJIT-2.0.3\luajit</AdditionalLibraryDirectories>
+      <AdditionalDependencies>lua51.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>

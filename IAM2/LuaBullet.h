@@ -128,6 +128,7 @@ namespace stgpart
 				tasks.effector->addBreakEffect(Vec2{ x, y });
 				tasks.effector->addBreakSE(); 
 				tasks.playerdata->addKill();
+				tasks.playerdata->addscore(500);
 				alive = false;
 			}
 			++lifetime;
